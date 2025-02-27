@@ -11,11 +11,10 @@ import javax.servlet.http.HttpServletRequest;
 import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 
 /**
- * 用户服务
- *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
- */
+* @author liulo
+* @description 针对表【user(用户)】的数据库操作Service
+* @createDate 2025-02-27 21:52:02
+*/
 public interface UserService extends IService<User> {
 
     /**
