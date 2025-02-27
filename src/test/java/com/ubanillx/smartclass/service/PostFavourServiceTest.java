@@ -3,8 +3,10 @@ package com.ubanillx.smartclass.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ubanillx.smartclass.model.entity.Post;
-import com.ubanillx.smartclass.model.entity.User;
+
 import javax.annotation.Resource;
+
+import com.ubanillx.smartclass.model.entity.User;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

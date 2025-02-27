@@ -18,10 +18,12 @@ import com.ubanillx.smartclass.model.entity.Post;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.vo.PostVO;
 import com.ubanillx.smartclass.service.PostService;
-import com.ubanillx.smartclass.service.UserService;
+
 import java.util.List;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
+import com.ubanillx.smartclass.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;

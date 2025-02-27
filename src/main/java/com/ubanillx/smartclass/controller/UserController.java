@@ -19,13 +19,13 @@ import com.ubanillx.smartclass.model.dto.user.UserUpdateRequest;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.vo.LoginUserVO;
 import com.ubanillx.smartclass.model.vo.UserVO;
-import com.ubanillx.smartclass.service.UserService;
 
 import java.util.List;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.ubanillx.smartclass.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 import me.chanjar.weixin.common.bean.oauth2.WxOAuth2AccessToken;
@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.ubanillx.smartclass.service.impl.UserServiceImpl.SALT;
+
 
 /**
  * 用户接口

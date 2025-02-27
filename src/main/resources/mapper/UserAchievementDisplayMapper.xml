@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.UserAchievementDisplayMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.UserAchievementDisplay">
+            <id property="id" column="id" />
+            <result property="userId" column="userId" />
+            <result property="achievementId" column="achievementId" />
+            <result property="achievementDisplayId" column="achievementDisplayId" />
+            <result property="isEnabled" column="isEnabled" />
+            <result property="isPinned" column="isPinned" />
+            <result property="customTitle" column="customTitle" />
+            <result property="customImageUrl" column="customImageUrl" />
+            <result property="displayCount" column="displayCount" />
+            <result property="lastDisplayTime" column="lastDisplayTime" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,achievementId,achievementDisplayId,isEnabled,isPinned,
+        customTitle,customImageUrl,displayCount,lastDisplayTime,createTime,
+        updateTime
+    </sql>
+</mapper>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.UserCourseProgressMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.UserCourseProgress">
+            <id property="id" column="id" />
+            <result property="userId" column="userId" />
+            <result property="courseId" column="courseId" />
+            <result property="sectionId" column="sectionId" />
+            <result property="progress" column="progress" />
+            <result property="watchDuration" column="watchDuration" />
+            <result property="lastPosition" column="lastPosition" />
+            <result property="isCompleted" column="isCompleted" />
+            <result property="completedTime" column="completedTime" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,courseId,sectionId,progress,watchDuration,
+        lastPosition,isCompleted,completedTime,createTime,updateTime
+    </sql>
+</mapper>

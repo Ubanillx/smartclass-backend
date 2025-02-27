@@ -14,9 +14,11 @@ import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.vo.PostVO;
 import com.ubanillx.smartclass.service.PostFavourService;
 import com.ubanillx.smartclass.service.PostService;
-import com.ubanillx.smartclass.service.UserService;
+
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
+import com.ubanillx.smartclass.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

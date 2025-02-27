@@ -67,6 +67,7 @@ create table if not exists post_favour
     index idx_postId (postId),
     index idx_userId (userId)
 ) comment '帖子收藏';
+
 -- 切换库
 use smart_class;
 
@@ -141,7 +142,7 @@ create table if not exists goal_type
     unit            varchar(32)                        null comment '单位',
     defaultValue    int      default 1                 not null comment '默认值',
     minValue        int      default 1                 not null comment '最小值',
-    maxValue        int                                null comment '最大值',
+    `maxValue`      int                                null comment '最大值',
     points          int      default 5                 not null comment '完成可获得积分',
     experience      int      default 10                not null comment '完成可获得经验值',
     isSystem        tinyint  default 1                 not null comment '是否系统预设：0-否，1-是',
@@ -199,12 +200,7 @@ create table if not exists user_learning_record
     index idx_recordType (recordType)
 ) comment '用户学习记录' collate = utf8mb4_unicode_ci;
 
--- 初始化学习目标类型数据
-INSERT INTO goal_type (name, code, icon, description, category, unit, defaultValue, minValue, maxValue, points, experience, isSystem, isEnabled)
-VALUES 
-('完成每日单词打卡', 'word_card', NULL, '完成每日单词学习打卡任务', '单词学习', '次', 1, 1, 1, 5, 10, 1, 1),
-('听力练习', 'listening', NULL, '完成听力练习', '听力学习', '分钟', 15, 5, 120, 10, 20, 1, 1),
-('完成口语课程', 'speaking_course', NULL, '完成一节口语课程', '口语学习', '节', 1, 1, 5, 15, 30, 1, 1); 
+
 -- 切换库
 use smart_class;
 
@@ -220,7 +216,7 @@ create table if not exists achievement
     category        varchar(64)                        not null comment '成就分类，如：学习、社交、活动等',
     level           tinyint  default 1                 not null comment '成就等级：1-普通，2-稀有，3-史诗，4-传说',
     points          int      default 0                 not null comment '成就点数',
-    condition       varchar(512)                       not null comment '获取条件描述',
+    achievementCondition varchar(512)                  not null comment '获取条件描述',
     conditionType   varchar(64)                        not null comment '条件类型，如：course_complete, login_days, article_read等',
     conditionValue  int      default 1                 not null comment '条件值，如完成10门课程，登录30天等',
     isHidden        tinyint  default 0                 not null comment '是否隐藏成就：0-否，1-是，隐藏成就不会提前显示给用户',
@@ -343,6 +339,7 @@ create table if not exists user_milestone
     index idx_isCompleted (isCompleted),
     unique uk_user_milestone (userId, milestoneId)
 ) comment '用户里程碑' collate = utf8mb4_unicode_ci; 
+
 -- 切换库
 use smart_class;
 
@@ -379,6 +376,7 @@ create table if not exists announcement_read
     index idx_userId (userId),
     unique uk_announcement_user (announcementId, userId)
 ) comment '公告阅读记录' collate = utf8mb4_unicode_ci; 
+
 -- 切换库
 use smart_class;
 
@@ -586,37 +584,6 @@ create table if not exists course_favourite
     unique uk_user_course (userId, courseId)
 ) comment '课程收藏' collate = utf8mb4_unicode_ci;
 
--- 学习目标类型表
-create table if not exists goal_type
-(
-    id              bigint auto_increment comment 'id' primary key,
-    name            varchar(128)                       not null comment '目标类型名称',
-    code            varchar(64)                        null comment '目标类型编码',
-    icon            varchar(1024)                      null comment '图标URL',
-    description     text                               null comment '描述',
-    category        varchar(128)                       null comment '分类',
-    unit            varchar(64)                        null comment '单位',
-    defaultValue    int                                not null comment '默认值',
-    minValue        int                                not null comment '最小值',
-    maxValue        int                                not null comment '最大值',
-    points          int                                not null comment '完成可获得积分',
-    experience      int                                not null comment '完成可获得经验值',
-    isSystem        tinyint                            not null comment '是否系统预设',
-    isEnabled       tinyint                            not null comment '是否启用',
-    createTime      datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime      datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete        tinyint                            not null comment '逻辑删除标记'
-) comment '学习目标类型' collate = utf8mb4_unicode_ci;
-
--- 初始化数据
-INSERT INTO goal_type (name, code, icon, description, category, unit, defaultValue, minValue, maxValue, points, experience, isSystem, isEnabled)
-VALUES 
-('完成每日单词打卡', 'word_card', NULL, '完成每日单词学习打卡任务', '单词学习', '次', 1, 1, 1, 5, 10, 1, 1),
-('听力练习', 'listening', NULL, '完成听力练习', '听力学习', '分钟', 15, 5, 120, 10, 20, 1, 1),
-('完成口语课程', 'speaking_course', NULL, '完成一节口语课程', '口语学习', '节', 1, 1, 5, 15, 30, 1, 1); 
--- 切换库
-use smart_class;
-
 -- 聊天会话表
 create table if not exists chat_session
 (
@@ -644,8 +611,6 @@ create table if not exists chat_message
     index idx_sessionId (sessionId),
     index idx_userId (userId)
 ) comment 'AI聊天消息' collate = utf8mb4_unicode_ci; 
--- 切换库
-use smart_class;
 
 -- 每日单词表
 create table if not exists daily_word

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.DailyWordMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.DailyWord">
+            <id property="id" column="id" />
+            <result property="word" column="word" />
+            <result property="pronunciation" column="pronunciation" />
+            <result property="audioUrl" column="audioUrl" />
+            <result property="translation" column="translation" />
+            <result property="example" column="example" />
+            <result property="exampleTranslation" column="exampleTranslation" />
+            <result property="difficulty" column="difficulty" />
+            <result property="category" column="category" />
+            <result property="notes" column="notes" />
+            <result property="publishDate" column="publishDate" />
+            <result property="adminId" column="adminId" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,word,pronunciation,audioUrl,translation,example,
+        exampleTranslation,difficulty,category,notes,publishDate,
+        adminId,createTime,updateTime,isDelete
+    </sql>
+</mapper>

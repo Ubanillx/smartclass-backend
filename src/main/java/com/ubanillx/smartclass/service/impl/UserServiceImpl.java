@@ -1,5 +1,4 @@
 package com.ubanillx.smartclass.service.impl;
-
 import static com.ubanillx.smartclass.constant.UserConstant.USER_LOGIN_STATE;
 
 import cn.hutool.core.collection.CollUtil;
@@ -26,6 +25,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+
+/**
+* @author liulo
+* @description 针对表【user(用户)】的数据库操作Service实现
+* @createDate 2025-02-27 21:52:02
+*/
 
 /**
  * 用户服务实现
@@ -270,3 +276,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return queryWrapper;
     }
 }
+
+
+
+

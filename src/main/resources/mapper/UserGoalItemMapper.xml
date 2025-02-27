@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.UserGoalItemMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.UserGoalItem">
+            <id property="id" column="id" />
+            <result property="userId" column="userId" />
+            <result property="dailyGoalId" column="dailyGoalId" />
+            <result property="goalTypeId" column="goalTypeId" />
+            <result property="goalDate" column="goalDate" />
+            <result property="title" column="title" />
+            <result property="targetValue" column="targetValue" />
+            <result property="currentValue" column="currentValue" />
+            <result property="progressPercent" column="progressPercent" />
+            <result property="isCompleted" column="isCompleted" />
+            <result property="completedTime" column="completedTime" />
+            <result property="isRewarded" column="isRewarded" />
+            <result property="rewardTime" column="rewardTime" />
+            <result property="sort" column="sort" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,dailyGoalId,goalTypeId,goalDate,title,
+        targetValue,currentValue,progressPercent,isCompleted,completedTime,
+        isRewarded,rewardTime,sort,createTime,updateTime
+    </sql>
+</mapper>

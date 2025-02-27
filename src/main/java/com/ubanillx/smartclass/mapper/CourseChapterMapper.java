@@ -1,0 +1,18 @@
+package com.ubanillx.smartclass.mapper;
+
+import com.ubanillx.smartclass.model.CourseChapter;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
+/**
+* @author liulo
+* @description 针对表【course_chapter(课程章节)】的数据库操作Mapper
+* @createDate 2025-02-27 21:52:02
+* @Entity com.ubanillx.smartclass.model.CourseChapter
+*/
+public interface CourseChapterMapper extends BaseMapper<CourseChapter> {
+
+}
+
+
+
+

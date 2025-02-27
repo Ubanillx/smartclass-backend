@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.UserAchievementMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.UserAchievement">
+            <id property="id" column="id" />
+            <result property="userId" column="userId" />
+            <result property="achievementId" column="achievementId" />
+            <result property="progress" column="progress" />
+            <result property="progressMax" column="progressMax" />
+            <result property="progressPercent" column="progressPercent" />
+            <result property="isCompleted" column="isCompleted" />
+            <result property="completedTime" column="completedTime" />
+            <result property="isRewarded" column="isRewarded" />
+            <result property="rewardTime" column="rewardTime" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,achievementId,progress,progressMax,progressPercent,
+        isCompleted,completedTime,isRewarded,rewardTime,createTime,
+        updateTime
+    </sql>
+</mapper>

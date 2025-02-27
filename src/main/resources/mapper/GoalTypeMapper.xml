@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.GoalTypeMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.GoalType">
+            <id property="id" column="id" />
+            <result property="name" column="name" />
+            <result property="code" column="code" />
+            <result property="icon" column="icon" />
+            <result property="description" column="description" />
+            <result property="category" column="category" />
+            <result property="unit" column="unit" />
+            <result property="defaultValue" column="defaultValue" />
+            <result property="minValue" column="minValue" />
+            <result property="maxValue" column="maxValue" />
+            <result property="points" column="points" />
+            <result property="experience" column="experience" />
+            <result property="isSystem" column="isSystem" />
+            <result property="isEnabled" column="isEnabled" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,name,code,icon,description,category,
+        unit,defaultValue,minValue,maxValue,points,
+        experience,isSystem,isEnabled,createTime,updateTime,
+        isDelete
+    </sql>
+</mapper>

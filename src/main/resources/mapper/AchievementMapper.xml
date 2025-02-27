@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.AchievementMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.Achievement">
+            <id property="id" column="id" />
+            <result property="name" column="name" />
+            <result property="description" column="description" />
+            <result property="iconUrl" column="iconUrl" />
+            <result property="badgeUrl" column="badgeUrl" />
+            <result property="bannerUrl" column="bannerUrl" />
+            <result property="category" column="category" />
+            <result property="level" column="level" />
+            <result property="points" column="points" />
+            <result property="achievementCondition" column="achievementCondition" />
+            <result property="conditionType" column="conditionType" />
+            <result property="conditionValue" column="conditionValue" />
+            <result property="isHidden" column="isHidden" />
+            <result property="isSecret" column="isSecret" />
+            <result property="rewardType" column="rewardType" />
+            <result property="rewardValue" column="rewardValue" />
+            <result property="sort" column="sort" />
+            <result property="adminId" column="adminId" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,name,description,iconUrl,badgeUrl,bannerUrl,
+        category,level,points,achievementCondition,conditionType,
+        conditionValue,isHidden,isSecret,rewardType,rewardValue,
+        sort,adminId,createTime,updateTime,isDelete
+    </sql>
+</mapper>
