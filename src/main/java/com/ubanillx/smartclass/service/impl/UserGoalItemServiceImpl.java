@@ -1,7 +1,7 @@
 package com.ubanillx.smartclass.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ubanillx.smartclass.model.UserGoalItem;
+import com.ubanillx.smartclass.model.entity.UserGoalItem;
 import com.ubanillx.smartclass.service.UserGoalItemService;
 import com.ubanillx.smartclass.mapper.UserGoalItemMapper;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,6 @@
 package com.ubanillx.smartclass.service;
 
-import com.ubanillx.smartclass.model.CourseMaterial;
+import com.ubanillx.smartclass.model.entity.CourseMaterial;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

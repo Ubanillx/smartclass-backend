@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ubanillx.smartclass.mapper.UserLearningStatsMapper">
 
-    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.UserLearningStats">
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.UserLearningStats">
             <id property="id" column="id" />
             <result property="userId" column="userId" />
             <result property="level" column="level" />

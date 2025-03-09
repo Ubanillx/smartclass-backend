@@ -117,4 +117,14 @@ public interface UserService extends IService<User> {
      */
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
 
+    /**
+     * 用户手机号登录
+     *
+     * @param userPhone    用户手机号
+     * @param userPassword 用户密码
+     * @param request
+     * @return 脱敏后的用户信息
+     */
+    LoginUserVO userLoginByPhone(String userPhone, String userPassword, HttpServletRequest request);
+
 }

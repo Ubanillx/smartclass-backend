@@ -1,6 +1,6 @@
 package com.ubanillx.smartclass.service;
 
-import com.ubanillx.smartclass.model.UserLevel;
+import com.ubanillx.smartclass.model.entity.UserLevel;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

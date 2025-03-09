@@ -1,4 +1,4 @@
-package com.ubanillx.smartclass.model;
+package com.ubanillx.smartclass.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

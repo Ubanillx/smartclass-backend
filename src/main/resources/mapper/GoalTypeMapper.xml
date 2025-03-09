@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ubanillx.smartclass.mapper.GoalTypeMapper">
 
-    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.GoalType">
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.GoalType">
             <id property="id" column="id" />
             <result property="name" column="name" />
             <result property="code" column="code" />

@@ -36,8 +36,7 @@ import org.springframework.util.DigestUtils;
 /**
  * 用户服务实现
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
+
  */
 @Service
 @Slf4j
@@ -274,6 +273,35 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
                 sortField);
         return queryWrapper;
+    }
+
+    @Override
+    public LoginUserVO userLoginByPhone(String userPhone, String userPassword, HttpServletRequest request) {
+        // 1. 校验
+        if (StringUtils.isAnyBlank(userPhone, userPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (userPhone.length() != 11) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号格式错误");
+        }
+        if (userPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码错误");
+        }
+        // 2. 加密
+        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+        // 查询用户是否存在
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userPhone", userPhone);
+        queryWrapper.eq("userPassword", encryptPassword);
+        User user = this.baseMapper.selectOne(queryWrapper);
+        // 用户不存在
+        if (user == null) {
+            log.info("user login failed, userPhone cannot match userPassword");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
+        }
+        // 3. 记录用户的登录态
+        request.getSession().setAttribute(USER_LOGIN_STATE, user);
+        return this.getLoginUserVO(user);
     }
 }
 

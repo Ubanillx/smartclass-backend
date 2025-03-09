@@ -1,6 +1,6 @@
 package com.ubanillx.smartclass.service;
 
-import com.ubanillx.smartclass.model.UserGoalItem;
+import com.ubanillx.smartclass.model.entity.UserGoalItem;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

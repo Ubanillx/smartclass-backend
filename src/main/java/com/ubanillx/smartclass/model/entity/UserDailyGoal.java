@@ -1,4 +1,4 @@
-package com.ubanillx.smartclass.model;
+package com.ubanillx.smartclass.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -7,12 +7,12 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 用户成就
- * @TableName user_achievement
+ * 用户每日学习目标
+ * @TableName user_daily_goal
  */
-@TableName(value ="user_achievement")
+@TableName(value ="user_daily_goal")
 @Data
-public class UserAchievement {
+public class UserDailyGoal {
     /**
      * id
      */
@@ -25,44 +25,44 @@ public class UserAchievement {
     private Long userId;
 
     /**
-     * 成就id
+     * 目标日期
      */
-    private Long achievementId;
+    private Date goalDate;
 
     /**
-     * 当前进度值
+     * 目标学习时间（分钟）
      */
-    private Integer progress;
+    private Integer targetMinutes;
 
     /**
-     * 目标进度值
+     * 已完成学习时间（分钟）
      */
-    private Integer progressMax;
+    private Integer completedMinutes;
 
     /**
-     * 进度百分比
+     * 总目标数
+     */
+    private Integer totalGoals;
+
+    /**
+     * 已完成目标数
+     */
+    private Integer completedGoals;
+
+    /**
+     * 完成百分比
      */
     private Integer progressPercent;
 
     /**
-     * 是否完成：0-否，1-是
+     * 是否全部完成：0-否，1-是
      */
     private Integer isCompleted;
 
     /**
-     * 完成时间
+     * 全部完成时间
      */
     private Date completedTime;
-
-    /**
-     * 是否已发放奖励：0-否，1-是
-     */
-    private Integer isRewarded;
-
-    /**
-     * 奖励发放时间
-     */
-    private Date rewardTime;
 
     /**
      * 创建时间
@@ -85,17 +85,17 @@ public class UserAchievement {
         if (getClass() != that.getClass()) {
             return false;
         }
-        UserAchievement other = (UserAchievement) that;
+        UserDailyGoal other = (UserDailyGoal) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
             && (this.getUserId() == null ? other.getUserId() == null : this.getUserId().equals(other.getUserId()))
-            && (this.getAchievementId() == null ? other.getAchievementId() == null : this.getAchievementId().equals(other.getAchievementId()))
-            && (this.getProgress() == null ? other.getProgress() == null : this.getProgress().equals(other.getProgress()))
-            && (this.getProgressMax() == null ? other.getProgressMax() == null : this.getProgressMax().equals(other.getProgressMax()))
+            && (this.getGoalDate() == null ? other.getGoalDate() == null : this.getGoalDate().equals(other.getGoalDate()))
+            && (this.getTargetMinutes() == null ? other.getTargetMinutes() == null : this.getTargetMinutes().equals(other.getTargetMinutes()))
+            && (this.getCompletedMinutes() == null ? other.getCompletedMinutes() == null : this.getCompletedMinutes().equals(other.getCompletedMinutes()))
+            && (this.getTotalGoals() == null ? other.getTotalGoals() == null : this.getTotalGoals().equals(other.getTotalGoals()))
+            && (this.getCompletedGoals() == null ? other.getCompletedGoals() == null : this.getCompletedGoals().equals(other.getCompletedGoals()))
             && (this.getProgressPercent() == null ? other.getProgressPercent() == null : this.getProgressPercent().equals(other.getProgressPercent()))
             && (this.getIsCompleted() == null ? other.getIsCompleted() == null : this.getIsCompleted().equals(other.getIsCompleted()))
             && (this.getCompletedTime() == null ? other.getCompletedTime() == null : this.getCompletedTime().equals(other.getCompletedTime()))
-            && (this.getIsRewarded() == null ? other.getIsRewarded() == null : this.getIsRewarded().equals(other.getIsRewarded()))
-            && (this.getRewardTime() == null ? other.getRewardTime() == null : this.getRewardTime().equals(other.getRewardTime()))
             && (this.getCreateTime() == null ? other.getCreateTime() == null : this.getCreateTime().equals(other.getCreateTime()))
             && (this.getUpdateTime() == null ? other.getUpdateTime() == null : this.getUpdateTime().equals(other.getUpdateTime()));
     }
@@ -106,14 +106,14 @@ public class UserAchievement {
         int result = 1;
         result = prime * result + ((getId() == null) ? 0 : getId().hashCode());
         result = prime * result + ((getUserId() == null) ? 0 : getUserId().hashCode());
-        result = prime * result + ((getAchievementId() == null) ? 0 : getAchievementId().hashCode());
-        result = prime * result + ((getProgress() == null) ? 0 : getProgress().hashCode());
-        result = prime * result + ((getProgressMax() == null) ? 0 : getProgressMax().hashCode());
+        result = prime * result + ((getGoalDate() == null) ? 0 : getGoalDate().hashCode());
+        result = prime * result + ((getTargetMinutes() == null) ? 0 : getTargetMinutes().hashCode());
+        result = prime * result + ((getCompletedMinutes() == null) ? 0 : getCompletedMinutes().hashCode());
+        result = prime * result + ((getTotalGoals() == null) ? 0 : getTotalGoals().hashCode());
+        result = prime * result + ((getCompletedGoals() == null) ? 0 : getCompletedGoals().hashCode());
         result = prime * result + ((getProgressPercent() == null) ? 0 : getProgressPercent().hashCode());
         result = prime * result + ((getIsCompleted() == null) ? 0 : getIsCompleted().hashCode());
         result = prime * result + ((getCompletedTime() == null) ? 0 : getCompletedTime().hashCode());
-        result = prime * result + ((getIsRewarded() == null) ? 0 : getIsRewarded().hashCode());
-        result = prime * result + ((getRewardTime() == null) ? 0 : getRewardTime().hashCode());
         result = prime * result + ((getCreateTime() == null) ? 0 : getCreateTime().hashCode());
         result = prime * result + ((getUpdateTime() == null) ? 0 : getUpdateTime().hashCode());
         return result;
@@ -127,14 +127,14 @@ public class UserAchievement {
         sb.append("Hash = ").append(hashCode());
         sb.append(", id=").append(id);
         sb.append(", userId=").append(userId);
-        sb.append(", achievementId=").append(achievementId);
-        sb.append(", progress=").append(progress);
-        sb.append(", progressMax=").append(progressMax);
+        sb.append(", goalDate=").append(goalDate);
+        sb.append(", targetMinutes=").append(targetMinutes);
+        sb.append(", completedMinutes=").append(completedMinutes);
+        sb.append(", totalGoals=").append(totalGoals);
+        sb.append(", completedGoals=").append(completedGoals);
         sb.append(", progressPercent=").append(progressPercent);
         sb.append(", isCompleted=").append(isCompleted);
         sb.append(", completedTime=").append(completedTime);
-        sb.append(", isRewarded=").append(isRewarded);
-        sb.append(", rewardTime=").append(rewardTime);
         sb.append(", createTime=").append(createTime);
         sb.append(", updateTime=").append(updateTime);
         sb.append("]");

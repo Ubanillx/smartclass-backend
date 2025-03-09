@@ -14,6 +14,8 @@
             <result property="personality" column="personality" />
             <result property="abilities" column="abilities" />
             <result property="promptTemplate" column="promptTemplate" />
+            <result property="apiUrl" column="apiUrl" />
+            <result property="apiKey" column="apiKey" />
             <result property="modelType" column="modelType" />
             <result property="modelConfig" column="modelConfig" />
             <result property="isPublic" column="isPublic" />
@@ -21,8 +23,7 @@
             <result property="usageCount" column="usageCount" />
             <result property="rating" column="rating" />
             <result property="ratingCount" column="ratingCount" />
-            <result property="creatorId" column="creatorId" />
-            <result property="creatorType" column="creatorType" />
+            <result property="adminId" column="adminId" />
             <result property="sort" column="sort" />
             <result property="createTime" column="createTime" />
             <result property="updateTime" column="updateTime" />
@@ -31,9 +32,9 @@
 
     <sql id="Base_Column_List">
         id,name,description,avatarUrl,tags,category,
-        personality,abilities,promptTemplate,modelType,modelConfig,
-        isPublic,status,usageCount,rating,ratingCount,
-        creatorId,creatorType,sort,createTime,updateTime,
-        isDelete
+        personality,abilities,promptTemplate,apiUrl,apiKey,
+        modelType,modelConfig,isPublic,status,usageCount,
+        rating,ratingCount,adminId,sort,createTime,
+        updateTime,isDelete
     </sql>
 </mapper>

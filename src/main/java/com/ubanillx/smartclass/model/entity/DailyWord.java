@@ -3,6 +3,7 @@ package com.ubanillx.smartclass.model.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import java.io.Serializable;
 import java.util.Date;
 import lombok.Data;
 
@@ -12,7 +13,10 @@ import lombok.Data;
  */
 @TableName(value ="daily_word")
 @Data
-public class DailyWord {
+public class DailyWord implements Serializable {
+    
+    private static final long serialVersionUID = 1L;
+
     /**
      * id
      */

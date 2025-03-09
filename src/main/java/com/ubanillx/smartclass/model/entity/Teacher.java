@@ -3,16 +3,20 @@ package com.ubanillx.smartclass.model.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import java.io.Serializable;
 import java.util.Date;
 import lombok.Data;
 
 /**
- * 讲师
+ * 教师
  * @TableName teacher
  */
 @TableName(value ="teacher")
 @Data
-public class Teacher {
+public class Teacher implements Serializable {
+    
+    private static final long serialVersionUID = 1L;
+    
     /**
      * id
      */
@@ -20,22 +24,22 @@ public class Teacher {
     private Long id;
 
     /**
-     * 讲师姓名
+     * 教师姓名
      */
     private String name;
 
     /**
-     * 讲师头像URL
+     * 教师头像URL
      */
     private String avatar;
 
     /**
-     * 讲师职称
+     * 教师职称
      */
     private String title;
 
     /**
-     * 讲师简介
+     * 教师简介
      */
     private String introduction;
 
@@ -45,7 +49,7 @@ public class Teacher {
     private String expertise;
 
     /**
-     * 关联的用户id，如果讲师也是平台用户
+     * 关联的用户id，如果教师也是平台用户
      */
     private Long userId;
 

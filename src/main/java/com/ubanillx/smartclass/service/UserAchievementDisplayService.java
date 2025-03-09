@@ -1,13 +1,12 @@
 package com.ubanillx.smartclass.service;
 
-import com.ubanillx.smartclass.model.UserAchievementDisplay;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.ubanillx.smartclass.model.entity.UserAchievementDisplay;
 
 /**
 * @author liulo
-* @description 针对表【user_achievement_display(用户成就展示记录)】的数据库操作Service
-* @createDate 2025-02-27 21:52:02
+* @description 针对表【user_achievement_display(用户成就展示)】的数据库操作Service
+* @createDate 2025-02-27 21:52:01
 */
-public interface UserAchievementDisplayService extends IService<UserAchievementDisplay> {
+public interface UserAchievementDisplayService extends BaseRelationService<UserAchievementDisplay> {
 
 }

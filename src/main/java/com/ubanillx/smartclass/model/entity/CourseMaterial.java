@@ -1,4 +1,4 @@
-package com.ubanillx.smartclass.model;
+package com.ubanillx.smartclass.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -7,12 +7,12 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 课程分类
- * @TableName course_category
+ * 课程资料
+ * @TableName course_material
  */
-@TableName(value ="course_category")
+@TableName(value ="course_material")
 @Data
-public class CourseCategory {
+public class CourseMaterial {
     /**
      * id
      */
@@ -20,29 +20,44 @@ public class CourseCategory {
     private Long id;
 
     /**
-     * 分类名称
+     * 课程id
      */
-    private String name;
+    private Long courseId;
 
     /**
-     * 分类描述
+     * 资料标题
+     */
+    private String title;
+
+    /**
+     * 资料描述
      */
     private String description;
 
     /**
-     * 分类图标URL
+     * 文件URL
      */
-    private String icon;
+    private String fileUrl;
 
     /**
-     * 排序权重，数字越大排序越靠前
+     * 文件大小(字节)
+     */
+    private Long fileSize;
+
+    /**
+     * 文件类型
+     */
+    private String fileType;
+
+    /**
+     * 下载次数
+     */
+    private Integer downloadCount;
+
+    /**
+     * 排序，数字越小排序越靠前
      */
     private Integer sort;
-
-    /**
-     * 父分类id，0表示一级分类
-     */
-    private Long parentId;
 
     /**
      * 创建管理员id
@@ -75,13 +90,16 @@ public class CourseCategory {
         if (getClass() != that.getClass()) {
             return false;
         }
-        CourseCategory other = (CourseCategory) that;
+        CourseMaterial other = (CourseMaterial) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
-            && (this.getName() == null ? other.getName() == null : this.getName().equals(other.getName()))
+            && (this.getCourseId() == null ? other.getCourseId() == null : this.getCourseId().equals(other.getCourseId()))
+            && (this.getTitle() == null ? other.getTitle() == null : this.getTitle().equals(other.getTitle()))
             && (this.getDescription() == null ? other.getDescription() == null : this.getDescription().equals(other.getDescription()))
-            && (this.getIcon() == null ? other.getIcon() == null : this.getIcon().equals(other.getIcon()))
+            && (this.getFileUrl() == null ? other.getFileUrl() == null : this.getFileUrl().equals(other.getFileUrl()))
+            && (this.getFileSize() == null ? other.getFileSize() == null : this.getFileSize().equals(other.getFileSize()))
+            && (this.getFileType() == null ? other.getFileType() == null : this.getFileType().equals(other.getFileType()))
+            && (this.getDownloadCount() == null ? other.getDownloadCount() == null : this.getDownloadCount().equals(other.getDownloadCount()))
             && (this.getSort() == null ? other.getSort() == null : this.getSort().equals(other.getSort()))
-            && (this.getParentId() == null ? other.getParentId() == null : this.getParentId().equals(other.getParentId()))
             && (this.getAdminId() == null ? other.getAdminId() == null : this.getAdminId().equals(other.getAdminId()))
             && (this.getCreateTime() == null ? other.getCreateTime() == null : this.getCreateTime().equals(other.getCreateTime()))
             && (this.getUpdateTime() == null ? other.getUpdateTime() == null : this.getUpdateTime().equals(other.getUpdateTime()))
@@ -93,11 +111,14 @@ public class CourseCategory {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((getId() == null) ? 0 : getId().hashCode());
-        result = prime * result + ((getName() == null) ? 0 : getName().hashCode());
+        result = prime * result + ((getCourseId() == null) ? 0 : getCourseId().hashCode());
+        result = prime * result + ((getTitle() == null) ? 0 : getTitle().hashCode());
         result = prime * result + ((getDescription() == null) ? 0 : getDescription().hashCode());
-        result = prime * result + ((getIcon() == null) ? 0 : getIcon().hashCode());
+        result = prime * result + ((getFileUrl() == null) ? 0 : getFileUrl().hashCode());
+        result = prime * result + ((getFileSize() == null) ? 0 : getFileSize().hashCode());
+        result = prime * result + ((getFileType() == null) ? 0 : getFileType().hashCode());
+        result = prime * result + ((getDownloadCount() == null) ? 0 : getDownloadCount().hashCode());
         result = prime * result + ((getSort() == null) ? 0 : getSort().hashCode());
-        result = prime * result + ((getParentId() == null) ? 0 : getParentId().hashCode());
         result = prime * result + ((getAdminId() == null) ? 0 : getAdminId().hashCode());
         result = prime * result + ((getCreateTime() == null) ? 0 : getCreateTime().hashCode());
         result = prime * result + ((getUpdateTime() == null) ? 0 : getUpdateTime().hashCode());
@@ -112,11 +133,14 @@ public class CourseCategory {
         sb.append(" [");
         sb.append("Hash = ").append(hashCode());
         sb.append(", id=").append(id);
-        sb.append(", name=").append(name);
+        sb.append(", courseId=").append(courseId);
+        sb.append(", title=").append(title);
         sb.append(", description=").append(description);
-        sb.append(", icon=").append(icon);
+        sb.append(", fileUrl=").append(fileUrl);
+        sb.append(", fileSize=").append(fileSize);
+        sb.append(", fileType=").append(fileType);
+        sb.append(", downloadCount=").append(downloadCount);
         sb.append(", sort=").append(sort);
-        sb.append(", parentId=").append(parentId);
         sb.append(", adminId=").append(adminId);
         sb.append(", createTime=").append(createTime);
         sb.append(", updateTime=").append(updateTime);

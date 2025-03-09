@@ -1,6 +1,6 @@
 package com.ubanillx.smartclass.service;
 
-import com.ubanillx.smartclass.model.GoalType;
+import com.ubanillx.smartclass.model.entity.GoalType;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

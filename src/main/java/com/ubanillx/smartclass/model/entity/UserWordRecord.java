@@ -1,4 +1,4 @@
-package com.ubanillx.smartclass.model;
+package com.ubanillx.smartclass.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -33,6 +33,11 @@ public class UserWordRecord {
      * 学习状态：0-未学习，1-已学习，2-已掌握
      */
     private Integer learningStatus;
+
+    /**
+     * 学习进度（0-100）
+     */
+    private Integer learningProgress;
 
     /**
      * 复习次数
@@ -75,6 +80,7 @@ public class UserWordRecord {
             && (this.getUserId() == null ? other.getUserId() == null : this.getUserId().equals(other.getUserId()))
             && (this.getWordId() == null ? other.getWordId() == null : this.getWordId().equals(other.getWordId()))
             && (this.getLearningStatus() == null ? other.getLearningStatus() == null : this.getLearningStatus().equals(other.getLearningStatus()))
+            && (this.getLearningProgress() == null ? other.getLearningProgress() == null : this.getLearningProgress().equals(other.getLearningProgress()))
             && (this.getReviewCount() == null ? other.getReviewCount() == null : this.getReviewCount().equals(other.getReviewCount()))
             && (this.getLastReviewTime() == null ? other.getLastReviewTime() == null : this.getLastReviewTime().equals(other.getLastReviewTime()))
             && (this.getUserNotes() == null ? other.getUserNotes() == null : this.getUserNotes().equals(other.getUserNotes()))
@@ -90,6 +96,7 @@ public class UserWordRecord {
         result = prime * result + ((getUserId() == null) ? 0 : getUserId().hashCode());
         result = prime * result + ((getWordId() == null) ? 0 : getWordId().hashCode());
         result = prime * result + ((getLearningStatus() == null) ? 0 : getLearningStatus().hashCode());
+        result = prime * result + ((getLearningProgress() == null) ? 0 : getLearningProgress().hashCode());
         result = prime * result + ((getReviewCount() == null) ? 0 : getReviewCount().hashCode());
         result = prime * result + ((getLastReviewTime() == null) ? 0 : getLastReviewTime().hashCode());
         result = prime * result + ((getUserNotes() == null) ? 0 : getUserNotes().hashCode());
@@ -108,6 +115,7 @@ public class UserWordRecord {
         sb.append(", userId=").append(userId);
         sb.append(", wordId=").append(wordId);
         sb.append(", learningStatus=").append(learningStatus);
+        sb.append(", learningProgress=").append(learningProgress);
         sb.append(", reviewCount=").append(reviewCount);
         sb.append(", lastReviewTime=").append(lastReviewTime);
         sb.append(", userNotes=").append(userNotes);

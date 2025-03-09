@@ -1,9 +1,8 @@
 package com.ubanillx.smartclass.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ubanillx.smartclass.model.AchievementMilestone;
-import com.ubanillx.smartclass.service.AchievementMilestoneService;
 import com.ubanillx.smartclass.mapper.AchievementMilestoneMapper;
+import com.ubanillx.smartclass.model.entity.AchievementMilestone;
+import com.ubanillx.smartclass.service.AchievementMilestoneService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,9 +11,13 @@ import org.springframework.stereotype.Service;
 * @createDate 2025-02-27 21:52:01
 */
 @Service
-public class AchievementMilestoneServiceImpl extends ServiceImpl<AchievementMilestoneMapper, AchievementMilestone>
-    implements AchievementMilestoneService{
-
+public class AchievementMilestoneServiceImpl extends BaseRelationServiceImpl<AchievementMilestoneMapper, AchievementMilestone>
+    implements AchievementMilestoneService {
+    
+    public AchievementMilestoneServiceImpl() {
+        // 设置关联ID字段名
+        setRelationIdFieldName("achievementId");
+    }
 }
 
 

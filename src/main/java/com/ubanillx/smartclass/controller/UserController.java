@@ -46,8 +46,7 @@ import static com.ubanillx.smartclass.service.impl.UserServiceImpl.SALT;
 /**
  * 用户接口
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
- * @from <a href="https://yupi.icu">编程导航知识星球</a>
+
  */
 @RestController
 @RequestMapping("/user")
@@ -125,6 +124,27 @@ public class UserController {
             log.error("userLoginByWxOpen error", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "登录失败，系统错误");
         }
+    }
+
+    /**
+     * 用户手机号登录
+     *
+     * @param userLoginRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/login/phone")
+    public BaseResponse<LoginUserVO> userLoginByPhone(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+        if (userLoginRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String userPhone = userLoginRequest.getUserPhone();
+        String userPassword = userLoginRequest.getUserPassword();
+        if (StringUtils.isAnyBlank(userPhone, userPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        LoginUserVO loginUserVO = userService.userLoginByPhone(userPhone, userPassword, request);
+        return ResultUtils.success(loginUserVO);
     }
 
     /**

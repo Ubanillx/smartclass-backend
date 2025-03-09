@@ -1,4 +1,4 @@
-package com.ubanillx.smartclass.model;
+package com.ubanillx.smartclass.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -7,12 +7,12 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 课程资料
- * @TableName course_material
+ * 成就里程碑
+ * @TableName achievement_milestone
  */
-@TableName(value ="course_material")
+@TableName(value ="achievement_milestone")
 @Data
-public class CourseMaterial {
+public class AchievementMilestone {
     /**
      * id
      */
@@ -20,39 +20,44 @@ public class CourseMaterial {
     private Long id;
 
     /**
-     * 课程id
+     * 里程碑名称
      */
-    private Long courseId;
+    private String name;
 
     /**
-     * 资料标题
-     */
-    private String title;
-
-    /**
-     * 资料描述
+     * 里程碑描述
      */
     private String description;
 
     /**
-     * 文件URL
+     * 里程碑图标URL
      */
-    private String fileUrl;
+    private String iconUrl;
 
     /**
-     * 文件大小(字节)
+     * 里程碑横幅URL
      */
-    private Long fileSize;
+    private String bannerUrl;
 
     /**
-     * 文件类型
+     * 里程碑分类
      */
-    private String fileType;
+    private String category;
 
     /**
-     * 下载次数
+     * 所需成就点数
      */
-    private Integer downloadCount;
+    private Integer requiredPoints;
+
+    /**
+     * 奖励类型
+     */
+    private String rewardType;
+
+    /**
+     * 奖励值
+     */
+    private String rewardValue;
 
     /**
      * 排序，数字越小排序越靠前
@@ -90,15 +95,16 @@ public class CourseMaterial {
         if (getClass() != that.getClass()) {
             return false;
         }
-        CourseMaterial other = (CourseMaterial) that;
+        AchievementMilestone other = (AchievementMilestone) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
-            && (this.getCourseId() == null ? other.getCourseId() == null : this.getCourseId().equals(other.getCourseId()))
-            && (this.getTitle() == null ? other.getTitle() == null : this.getTitle().equals(other.getTitle()))
+            && (this.getName() == null ? other.getName() == null : this.getName().equals(other.getName()))
             && (this.getDescription() == null ? other.getDescription() == null : this.getDescription().equals(other.getDescription()))
-            && (this.getFileUrl() == null ? other.getFileUrl() == null : this.getFileUrl().equals(other.getFileUrl()))
-            && (this.getFileSize() == null ? other.getFileSize() == null : this.getFileSize().equals(other.getFileSize()))
-            && (this.getFileType() == null ? other.getFileType() == null : this.getFileType().equals(other.getFileType()))
-            && (this.getDownloadCount() == null ? other.getDownloadCount() == null : this.getDownloadCount().equals(other.getDownloadCount()))
+            && (this.getIconUrl() == null ? other.getIconUrl() == null : this.getIconUrl().equals(other.getIconUrl()))
+            && (this.getBannerUrl() == null ? other.getBannerUrl() == null : this.getBannerUrl().equals(other.getBannerUrl()))
+            && (this.getCategory() == null ? other.getCategory() == null : this.getCategory().equals(other.getCategory()))
+            && (this.getRequiredPoints() == null ? other.getRequiredPoints() == null : this.getRequiredPoints().equals(other.getRequiredPoints()))
+            && (this.getRewardType() == null ? other.getRewardType() == null : this.getRewardType().equals(other.getRewardType()))
+            && (this.getRewardValue() == null ? other.getRewardValue() == null : this.getRewardValue().equals(other.getRewardValue()))
             && (this.getSort() == null ? other.getSort() == null : this.getSort().equals(other.getSort()))
             && (this.getAdminId() == null ? other.getAdminId() == null : this.getAdminId().equals(other.getAdminId()))
             && (this.getCreateTime() == null ? other.getCreateTime() == null : this.getCreateTime().equals(other.getCreateTime()))
@@ -111,13 +117,14 @@ public class CourseMaterial {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((getId() == null) ? 0 : getId().hashCode());
-        result = prime * result + ((getCourseId() == null) ? 0 : getCourseId().hashCode());
-        result = prime * result + ((getTitle() == null) ? 0 : getTitle().hashCode());
+        result = prime * result + ((getName() == null) ? 0 : getName().hashCode());
         result = prime * result + ((getDescription() == null) ? 0 : getDescription().hashCode());
-        result = prime * result + ((getFileUrl() == null) ? 0 : getFileUrl().hashCode());
-        result = prime * result + ((getFileSize() == null) ? 0 : getFileSize().hashCode());
-        result = prime * result + ((getFileType() == null) ? 0 : getFileType().hashCode());
-        result = prime * result + ((getDownloadCount() == null) ? 0 : getDownloadCount().hashCode());
+        result = prime * result + ((getIconUrl() == null) ? 0 : getIconUrl().hashCode());
+        result = prime * result + ((getBannerUrl() == null) ? 0 : getBannerUrl().hashCode());
+        result = prime * result + ((getCategory() == null) ? 0 : getCategory().hashCode());
+        result = prime * result + ((getRequiredPoints() == null) ? 0 : getRequiredPoints().hashCode());
+        result = prime * result + ((getRewardType() == null) ? 0 : getRewardType().hashCode());
+        result = prime * result + ((getRewardValue() == null) ? 0 : getRewardValue().hashCode());
         result = prime * result + ((getSort() == null) ? 0 : getSort().hashCode());
         result = prime * result + ((getAdminId() == null) ? 0 : getAdminId().hashCode());
         result = prime * result + ((getCreateTime() == null) ? 0 : getCreateTime().hashCode());
@@ -133,13 +140,14 @@ public class CourseMaterial {
         sb.append(" [");
         sb.append("Hash = ").append(hashCode());
         sb.append(", id=").append(id);
-        sb.append(", courseId=").append(courseId);
-        sb.append(", title=").append(title);
+        sb.append(", name=").append(name);
         sb.append(", description=").append(description);
-        sb.append(", fileUrl=").append(fileUrl);
-        sb.append(", fileSize=").append(fileSize);
-        sb.append(", fileType=").append(fileType);
-        sb.append(", downloadCount=").append(downloadCount);
+        sb.append(", iconUrl=").append(iconUrl);
+        sb.append(", bannerUrl=").append(bannerUrl);
+        sb.append(", category=").append(category);
+        sb.append(", requiredPoints=").append(requiredPoints);
+        sb.append(", rewardType=").append(rewardType);
+        sb.append(", rewardValue=").append(rewardValue);
         sb.append(", sort=").append(sort);
         sb.append(", adminId=").append(adminId);
         sb.append(", createTime=").append(createTime);

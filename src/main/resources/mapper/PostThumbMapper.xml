@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ubanillx.smartclass.generator.mapper.PostThumbMapper">
 
-    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.PostThumb">
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.PostThumb">
             <id property="id" column="id" />
             <result property="postId" column="postId" />
             <result property="userId" column="userId" />

@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ubanillx.smartclass.mapper.AchievementMilestoneMapper">
 
-    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.AchievementMilestone">
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.AchievementMilestone">
             <id property="id" column="id" />
             <result property="name" column="name" />
             <result property="description" column="description" />

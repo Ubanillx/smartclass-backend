@@ -1,13 +1,12 @@
 package com.ubanillx.smartclass.service;
 
-import com.ubanillx.smartclass.model.UserCourse;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.ubanillx.smartclass.model.entity.UserCourse;
 
 /**
 * @author liulo
-* @description 针对表【user_course(用户课程购买记录)】的数据库操作Service
-* @createDate 2025-02-27 21:52:02
+* @description 针对表【user_course(用户课程关联)】的数据库操作Service
+* @createDate 2025-02-27 21:52:01
 */
-public interface UserCourseService extends IService<UserCourse> {
+public interface UserCourseService extends BaseRelationService<UserCourse> {
 
 }

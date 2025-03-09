@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ubanillx.smartclass.mapper.AnnouncementReadMapper">
 
-    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.AnnouncementRead">
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.AnnouncementRead">
             <id property="id" column="id" />
             <result property="announcementId" column="announcementId" />
             <result property="userId" column="userId" />

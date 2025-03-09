@@ -1,18 +1,22 @@
-package com.ubanillx.smartclass.model;
+package com.ubanillx.smartclass.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import java.io.Serializable;
 import java.util.Date;
 import lombok.Data;
 
 /**
- * 用户每日学习目标
- * @TableName user_daily_goal
+ * 用户学习进度
+ * @TableName user_course_progress
  */
-@TableName(value ="user_daily_goal")
+@TableName(value ="user_course_progress")
 @Data
-public class UserDailyGoal {
+public class UserCourseProgress implements Serializable {
+    
+    private static final long serialVersionUID = 1L;
+    
     /**
      * id
      */
@@ -25,32 +29,37 @@ public class UserDailyGoal {
     private Long userId;
 
     /**
-     * 目标日期
+     * 课程id
      */
-    private Date goalDate;
+    private Long courseId;
 
     /**
-     * 总目标数
+     * 小节id
      */
-    private Integer totalGoals;
+    private Long sectionId;
 
     /**
-     * 已完成目标数
+     * 学习进度(百分比)
      */
-    private Integer completedGoals;
+    private Integer progress;
 
     /**
-     * 完成百分比
+     * 观看时长(秒)
      */
-    private Integer progressPercent;
+    private Integer watchDuration;
 
     /**
-     * 是否全部完成：0-否，1-是
+     * 上次观看位置(秒)
+     */
+    private Integer lastPosition;
+
+    /**
+     * 是否完成：0-否，1-是
      */
     private Integer isCompleted;
 
     /**
-     * 全部完成时间
+     * 完成时间
      */
     private Date completedTime;
 
@@ -75,13 +84,14 @@ public class UserDailyGoal {
         if (getClass() != that.getClass()) {
             return false;
         }
-        UserDailyGoal other = (UserDailyGoal) that;
+        UserCourseProgress other = (UserCourseProgress) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
             && (this.getUserId() == null ? other.getUserId() == null : this.getUserId().equals(other.getUserId()))
-            && (this.getGoalDate() == null ? other.getGoalDate() == null : this.getGoalDate().equals(other.getGoalDate()))
-            && (this.getTotalGoals() == null ? other.getTotalGoals() == null : this.getTotalGoals().equals(other.getTotalGoals()))
-            && (this.getCompletedGoals() == null ? other.getCompletedGoals() == null : this.getCompletedGoals().equals(other.getCompletedGoals()))
-            && (this.getProgressPercent() == null ? other.getProgressPercent() == null : this.getProgressPercent().equals(other.getProgressPercent()))
+            && (this.getCourseId() == null ? other.getCourseId() == null : this.getCourseId().equals(other.getCourseId()))
+            && (this.getSectionId() == null ? other.getSectionId() == null : this.getSectionId().equals(other.getSectionId()))
+            && (this.getProgress() == null ? other.getProgress() == null : this.getProgress().equals(other.getProgress()))
+            && (this.getWatchDuration() == null ? other.getWatchDuration() == null : this.getWatchDuration().equals(other.getWatchDuration()))
+            && (this.getLastPosition() == null ? other.getLastPosition() == null : this.getLastPosition().equals(other.getLastPosition()))
             && (this.getIsCompleted() == null ? other.getIsCompleted() == null : this.getIsCompleted().equals(other.getIsCompleted()))
             && (this.getCompletedTime() == null ? other.getCompletedTime() == null : this.getCompletedTime().equals(other.getCompletedTime()))
             && (this.getCreateTime() == null ? other.getCreateTime() == null : this.getCreateTime().equals(other.getCreateTime()))
@@ -94,10 +104,11 @@ public class UserDailyGoal {
         int result = 1;
         result = prime * result + ((getId() == null) ? 0 : getId().hashCode());
         result = prime * result + ((getUserId() == null) ? 0 : getUserId().hashCode());
-        result = prime * result + ((getGoalDate() == null) ? 0 : getGoalDate().hashCode());
-        result = prime * result + ((getTotalGoals() == null) ? 0 : getTotalGoals().hashCode());
-        result = prime * result + ((getCompletedGoals() == null) ? 0 : getCompletedGoals().hashCode());
-        result = prime * result + ((getProgressPercent() == null) ? 0 : getProgressPercent().hashCode());
+        result = prime * result + ((getCourseId() == null) ? 0 : getCourseId().hashCode());
+        result = prime * result + ((getSectionId() == null) ? 0 : getSectionId().hashCode());
+        result = prime * result + ((getProgress() == null) ? 0 : getProgress().hashCode());
+        result = prime * result + ((getWatchDuration() == null) ? 0 : getWatchDuration().hashCode());
+        result = prime * result + ((getLastPosition() == null) ? 0 : getLastPosition().hashCode());
         result = prime * result + ((getIsCompleted() == null) ? 0 : getIsCompleted().hashCode());
         result = prime * result + ((getCompletedTime() == null) ? 0 : getCompletedTime().hashCode());
         result = prime * result + ((getCreateTime() == null) ? 0 : getCreateTime().hashCode());
@@ -113,10 +124,11 @@ public class UserDailyGoal {
         sb.append("Hash = ").append(hashCode());
         sb.append(", id=").append(id);
         sb.append(", userId=").append(userId);
-        sb.append(", goalDate=").append(goalDate);
-        sb.append(", totalGoals=").append(totalGoals);
-        sb.append(", completedGoals=").append(completedGoals);
-        sb.append(", progressPercent=").append(progressPercent);
+        sb.append(", courseId=").append(courseId);
+        sb.append(", sectionId=").append(sectionId);
+        sb.append(", progress=").append(progress);
+        sb.append(", watchDuration=").append(watchDuration);
+        sb.append(", lastPosition=").append(lastPosition);
         sb.append(", isCompleted=").append(isCompleted);
         sb.append(", completedTime=").append(completedTime);
         sb.append(", createTime=").append(createTime);

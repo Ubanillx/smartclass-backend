@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ubanillx.smartclass.mapper.CourseSectionMapper">
 
-    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.CourseSection">
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.CourseSection">
             <id property="id" column="id" />
             <result property="courseId" column="courseId" />
             <result property="chapterId" column="chapterId" />

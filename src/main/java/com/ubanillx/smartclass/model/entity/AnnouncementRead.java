@@ -1,4 +1,4 @@
-package com.ubanillx.smartclass.model;
+package com.ubanillx.smartclass.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -7,12 +7,12 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 课程收藏
- * @TableName course_favourite
+ * 公告阅读记录
+ * @TableName announcement_read
  */
-@TableName(value ="course_favourite")
+@TableName(value ="announcement_read")
 @Data
-public class CourseFavourite {
+public class AnnouncementRead {
     /**
      * id
      */
@@ -20,17 +20,17 @@ public class CourseFavourite {
     private Long id;
 
     /**
+     * 公告id
+     */
+    private Long announcementId;
+
+    /**
      * 用户id
      */
     private Long userId;
 
     /**
-     * 课程id
-     */
-    private Long courseId;
-
-    /**
-     * 创建时间
+     * 阅读时间
      */
     private Date createTime;
 
@@ -50,10 +50,10 @@ public class CourseFavourite {
         if (getClass() != that.getClass()) {
             return false;
         }
-        CourseFavourite other = (CourseFavourite) that;
+        AnnouncementRead other = (AnnouncementRead) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
+            && (this.getAnnouncementId() == null ? other.getAnnouncementId() == null : this.getAnnouncementId().equals(other.getAnnouncementId()))
             && (this.getUserId() == null ? other.getUserId() == null : this.getUserId().equals(other.getUserId()))
-            && (this.getCourseId() == null ? other.getCourseId() == null : this.getCourseId().equals(other.getCourseId()))
             && (this.getCreateTime() == null ? other.getCreateTime() == null : this.getCreateTime().equals(other.getCreateTime()))
             && (this.getUpdateTime() == null ? other.getUpdateTime() == null : this.getUpdateTime().equals(other.getUpdateTime()));
     }
@@ -63,8 +63,8 @@ public class CourseFavourite {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((getId() == null) ? 0 : getId().hashCode());
+        result = prime * result + ((getAnnouncementId() == null) ? 0 : getAnnouncementId().hashCode());
         result = prime * result + ((getUserId() == null) ? 0 : getUserId().hashCode());
-        result = prime * result + ((getCourseId() == null) ? 0 : getCourseId().hashCode());
         result = prime * result + ((getCreateTime() == null) ? 0 : getCreateTime().hashCode());
         result = prime * result + ((getUpdateTime() == null) ? 0 : getUpdateTime().hashCode());
         return result;
@@ -77,8 +77,8 @@ public class CourseFavourite {
         sb.append(" [");
         sb.append("Hash = ").append(hashCode());
         sb.append(", id=").append(id);
+        sb.append(", announcementId=").append(announcementId);
         sb.append(", userId=").append(userId);
-        sb.append(", courseId=").append(courseId);
         sb.append(", createTime=").append(createTime);
         sb.append(", updateTime=").append(updateTime);
         sb.append("]");

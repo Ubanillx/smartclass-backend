@@ -1,4 +1,4 @@
-package com.ubanillx.smartclass.model;
+package com.ubanillx.smartclass.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -7,12 +7,12 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 帖子收藏
- * @TableName post_favour
+ * 课程收藏
+ * @TableName course_favourite
  */
-@TableName(value ="post_favour")
+@TableName(value ="course_favourite")
 @Data
-public class PostFavour {
+public class CourseFavourite {
     /**
      * id
      */
@@ -20,14 +20,14 @@ public class PostFavour {
     private Long id;
 
     /**
-     * 帖子 id
-     */
-    private Long postId;
-
-    /**
-     * 创建用户 id
+     * 用户id
      */
     private Long userId;
+
+    /**
+     * 课程id
+     */
+    private Long courseId;
 
     /**
      * 创建时间
@@ -50,10 +50,10 @@ public class PostFavour {
         if (getClass() != that.getClass()) {
             return false;
         }
-        PostFavour other = (PostFavour) that;
+        CourseFavourite other = (CourseFavourite) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
-            && (this.getPostId() == null ? other.getPostId() == null : this.getPostId().equals(other.getPostId()))
             && (this.getUserId() == null ? other.getUserId() == null : this.getUserId().equals(other.getUserId()))
+            && (this.getCourseId() == null ? other.getCourseId() == null : this.getCourseId().equals(other.getCourseId()))
             && (this.getCreateTime() == null ? other.getCreateTime() == null : this.getCreateTime().equals(other.getCreateTime()))
             && (this.getUpdateTime() == null ? other.getUpdateTime() == null : this.getUpdateTime().equals(other.getUpdateTime()));
     }
@@ -63,8 +63,8 @@ public class PostFavour {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((getId() == null) ? 0 : getId().hashCode());
-        result = prime * result + ((getPostId() == null) ? 0 : getPostId().hashCode());
         result = prime * result + ((getUserId() == null) ? 0 : getUserId().hashCode());
+        result = prime * result + ((getCourseId() == null) ? 0 : getCourseId().hashCode());
         result = prime * result + ((getCreateTime() == null) ? 0 : getCreateTime().hashCode());
         result = prime * result + ((getUpdateTime() == null) ? 0 : getUpdateTime().hashCode());
         return result;
@@ -77,8 +77,8 @@ public class PostFavour {
         sb.append(" [");
         sb.append("Hash = ").append(hashCode());
         sb.append(", id=").append(id);
-        sb.append(", postId=").append(postId);
         sb.append(", userId=").append(userId);
+        sb.append(", courseId=").append(courseId);
         sb.append(", createTime=").append(createTime);
         sb.append(", updateTime=").append(updateTime);
         sb.append("]");

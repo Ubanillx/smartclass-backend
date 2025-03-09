@@ -1,6 +1,6 @@
 package com.ubanillx.smartclass.service;
 
-import com.ubanillx.smartclass.model.CourseCategory;
+import com.ubanillx.smartclass.model.entity.CourseCategory;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

@@ -1,7 +1,7 @@
 package com.ubanillx.smartclass.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ubanillx.smartclass.model.UserLevel;
+import com.ubanillx.smartclass.model.entity.UserLevel;
 import com.ubanillx.smartclass.service.UserLevelService;
 import com.ubanillx.smartclass.mapper.UserLevelMapper;
 import org.springframework.stereotype.Service;

@@ -1,19 +1,18 @@
-package com.ubanillx.smartclass.model;
+package com.ubanillx.smartclass.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import java.math.BigDecimal;
 import java.util.Date;
 import lombok.Data;
 
 /**
- * 用户课程购买记录
- * @TableName user_course
+ * 课程章节
+ * @TableName course_chapter
  */
-@TableName(value ="user_course")
+@TableName(value ="course_chapter")
 @Data
-public class UserCourse {
+public class CourseChapter {
     /**
      * id
      */
@@ -21,44 +20,29 @@ public class UserCourse {
     private Long id;
 
     /**
-     * 用户id
-     */
-    private Long userId;
-
-    /**
      * 课程id
      */
     private Long courseId;
 
     /**
-     * 订单编号
+     * 章节标题
      */
-    private String orderNo;
+    private String title;
 
     /**
-     * 购买价格
+     * 章节描述
      */
-    private BigDecimal price;
+    private String description;
 
     /**
-     * 支付方式
+     * 排序，数字越小排序越靠前
      */
-    private String paymentMethod;
+    private Integer sort;
 
     /**
-     * 支付时间
+     * 创建管理员id
      */
-    private Date paymentTime;
-
-    /**
-     * 过期时间，null表示永久有效
-     */
-    private Date expireTime;
-
-    /**
-     * 状态：0-未支付，1-已支付，2-已过期，3-已退款
-     */
-    private Integer status;
+    private Long adminId;
 
     /**
      * 创建时间
@@ -86,16 +70,13 @@ public class UserCourse {
         if (getClass() != that.getClass()) {
             return false;
         }
-        UserCourse other = (UserCourse) that;
+        CourseChapter other = (CourseChapter) that;
         return (this.getId() == null ? other.getId() == null : this.getId().equals(other.getId()))
-            && (this.getUserId() == null ? other.getUserId() == null : this.getUserId().equals(other.getUserId()))
             && (this.getCourseId() == null ? other.getCourseId() == null : this.getCourseId().equals(other.getCourseId()))
-            && (this.getOrderNo() == null ? other.getOrderNo() == null : this.getOrderNo().equals(other.getOrderNo()))
-            && (this.getPrice() == null ? other.getPrice() == null : this.getPrice().equals(other.getPrice()))
-            && (this.getPaymentMethod() == null ? other.getPaymentMethod() == null : this.getPaymentMethod().equals(other.getPaymentMethod()))
-            && (this.getPaymentTime() == null ? other.getPaymentTime() == null : this.getPaymentTime().equals(other.getPaymentTime()))
-            && (this.getExpireTime() == null ? other.getExpireTime() == null : this.getExpireTime().equals(other.getExpireTime()))
-            && (this.getStatus() == null ? other.getStatus() == null : this.getStatus().equals(other.getStatus()))
+            && (this.getTitle() == null ? other.getTitle() == null : this.getTitle().equals(other.getTitle()))
+            && (this.getDescription() == null ? other.getDescription() == null : this.getDescription().equals(other.getDescription()))
+            && (this.getSort() == null ? other.getSort() == null : this.getSort().equals(other.getSort()))
+            && (this.getAdminId() == null ? other.getAdminId() == null : this.getAdminId().equals(other.getAdminId()))
             && (this.getCreateTime() == null ? other.getCreateTime() == null : this.getCreateTime().equals(other.getCreateTime()))
             && (this.getUpdateTime() == null ? other.getUpdateTime() == null : this.getUpdateTime().equals(other.getUpdateTime()))
             && (this.getIsDelete() == null ? other.getIsDelete() == null : this.getIsDelete().equals(other.getIsDelete()));
@@ -106,14 +87,11 @@ public class UserCourse {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((getId() == null) ? 0 : getId().hashCode());
-        result = prime * result + ((getUserId() == null) ? 0 : getUserId().hashCode());
         result = prime * result + ((getCourseId() == null) ? 0 : getCourseId().hashCode());
-        result = prime * result + ((getOrderNo() == null) ? 0 : getOrderNo().hashCode());
-        result = prime * result + ((getPrice() == null) ? 0 : getPrice().hashCode());
-        result = prime * result + ((getPaymentMethod() == null) ? 0 : getPaymentMethod().hashCode());
-        result = prime * result + ((getPaymentTime() == null) ? 0 : getPaymentTime().hashCode());
-        result = prime * result + ((getExpireTime() == null) ? 0 : getExpireTime().hashCode());
-        result = prime * result + ((getStatus() == null) ? 0 : getStatus().hashCode());
+        result = prime * result + ((getTitle() == null) ? 0 : getTitle().hashCode());
+        result = prime * result + ((getDescription() == null) ? 0 : getDescription().hashCode());
+        result = prime * result + ((getSort() == null) ? 0 : getSort().hashCode());
+        result = prime * result + ((getAdminId() == null) ? 0 : getAdminId().hashCode());
         result = prime * result + ((getCreateTime() == null) ? 0 : getCreateTime().hashCode());
         result = prime * result + ((getUpdateTime() == null) ? 0 : getUpdateTime().hashCode());
         result = prime * result + ((getIsDelete() == null) ? 0 : getIsDelete().hashCode());
@@ -127,14 +105,11 @@ public class UserCourse {
         sb.append(" [");
         sb.append("Hash = ").append(hashCode());
         sb.append(", id=").append(id);
-        sb.append(", userId=").append(userId);
         sb.append(", courseId=").append(courseId);
-        sb.append(", orderNo=").append(orderNo);
-        sb.append(", price=").append(price);
-        sb.append(", paymentMethod=").append(paymentMethod);
-        sb.append(", paymentTime=").append(paymentTime);
-        sb.append(", expireTime=").append(expireTime);
-        sb.append(", status=").append(status);
+        sb.append(", title=").append(title);
+        sb.append(", description=").append(description);
+        sb.append(", sort=").append(sort);
+        sb.append(", adminId=").append(adminId);
         sb.append(", createTime=").append(createTime);
         sb.append(", updateTime=").append(updateTime);
         sb.append(", isDelete=").append(isDelete);

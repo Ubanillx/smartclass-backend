@@ -1,7 +1,7 @@
 package com.ubanillx.smartclass.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ubanillx.smartclass.model.CourseReview;
+import com.ubanillx.smartclass.model.entity.CourseReview;
 import com.ubanillx.smartclass.service.CourseReviewService;
 import com.ubanillx.smartclass.mapper.CourseReviewMapper;
 import org.springframework.stereotype.Service;
