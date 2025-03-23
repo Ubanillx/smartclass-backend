@@ -74,9 +74,6 @@ create table if not exists post_favour
     index idx_userId (userId)
     ) comment '帖子收藏';
 
--- 切换库
-use smart_class;
-
 -- 用户等级表
 create table if not exists user_level
 (
@@ -102,7 +99,6 @@ create table if not exists user_learning_stats
     level             int      default 1                 not null comment '当前等级',
     experience        int      default 0                 not null comment '当前经验值',
     nextLevelExp      int      default 100               not null comment '下一级所需经验值',
-    nickname          varchar(128)                       null comment '用户昵称',
     learningDays      int      default 0                 not null comment '学习天数',
     continuousCheckIn int      default 0                 not null comment '连续打卡天数',
     totalCheckIn      int      default 0                 not null comment '总打卡天数',
@@ -117,6 +113,62 @@ create table if not exists user_learning_stats
     index idx_learningDays (learningDays),
     index idx_continuousCheckIn (continuousCheckIn)
     ) comment '用户学习统计' collate = utf8mb4_unicode_ci;
+
+-- 用户与每日文章关联表
+CREATE TABLE IF NOT EXISTS user_daily_article
+(
+    id             BIGINT AUTO_INCREMENT COMMENT 'id' PRIMARY KEY,
+    userId         BIGINT                             NOT NULL COMMENT '用户id',
+    articleId      BIGINT                             NOT NULL COMMENT '文章id',
+    isRead         TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否阅读：0-否，1-是',
+    readTime       DATETIME                           NULL COMMENT '阅读时间',
+    isLiked        TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否点赞：0-否，1-是',
+    likeTime       DATETIME                           NULL COMMENT '点赞时间',
+    isCollected    TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否收藏：0-否，1-是',
+    collectTime    DATETIME                           NULL COMMENT '收藏时间',
+    commentContent TEXT                               NULL COMMENT '评论内容',
+    commentTime    DATETIME                           NULL COMMENT '评论时间',
+    createTime     DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime     DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_userId (userId),
+    INDEX idx_articleId (articleId),
+    UNIQUE uk_user_article (userId, articleId)
+    ) COMMENT '用户与每日文章关联' COLLATE = utf8mb4_unicode_ci;
+
+-- 用户与每日单词关联表
+CREATE TABLE IF NOT EXISTS user_daily_word
+(
+    id             BIGINT AUTO_INCREMENT COMMENT 'id' PRIMARY KEY,
+    userId         BIGINT                             NOT NULL COMMENT '用户id',
+    wordId         BIGINT                             NOT NULL COMMENT '单词id',
+    isStudied      TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否学习：0-否，1-是',
+    studyTime      DATETIME                           NULL COMMENT '学习时间',
+    isLiked        TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否点赞：0-否，1-是',
+    likeTime       DATETIME                           NULL COMMENT '点赞时间',
+    isCollected    TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否收藏：0-否，1-是',
+    collectTime    DATETIME                           NULL COMMENT '收藏时间',
+    noteContent    TEXT                               NULL COMMENT '笔记内容',
+    noteTime       DATETIME                           NULL COMMENT '笔记时间',
+    masteryLevel   TINYINT  DEFAULT 0                 NOT NULL COMMENT '掌握程度：0-未知，1-生词，2-熟悉，3-掌握',
+    createTime     DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime     DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_userId (userId),
+    INDEX idx_wordId (wordId),
+    UNIQUE uk_user_word (userId, wordId)
+) COMMENT '用户与每日单词关联' COLLATE = utf8mb4_unicode_ci;
+-- 用户与公告关联表
+CREATE TABLE IF NOT EXISTS user_announcement_reader
+(
+    id              BIGINT AUTO_INCREMENT COMMENT 'id' PRIMARY KEY,
+    userId         BIGINT                             NOT NULL COMMENT '用户id',
+    announcementId BIGINT                             NOT NULL COMMENT '公告id',
+    readTime       DATETIME                           NULL COMMENT '阅读时间',
+    createTime     DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime     DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_user_id (userId),
+    INDEX idx_announcement_id (announcementId),
+    UNIQUE uk_user_announcement (userId, announcementId)
+) COMMENT '用户公告阅读记录' COLLATE = utf8mb4_unicode_ci;
 
 -- 用户每日学习目标表
 create table if not exists user_daily_goal
@@ -187,28 +239,30 @@ create table if not exists user_goal_item
     ) comment '用户学习目标项' collate = utf8mb4_unicode_ci;
 
 -- 用户学习记录表
-create table if not exists user_learning_record
+CREATE TABLE IF NOT EXISTS user_learning_record
 (
-    id         bigint auto_increment comment 'id' primary key,
-    userId     bigint                             not null comment '用户id',
-    recordDate date                               not null comment '记录日期',
-    recordType varchar(64)                        not null comment '记录类型，如：word_card, listening, course等',
-    relatedId  bigint                             null comment '关联ID，如单词ID、课程ID等',
-    duration   int      default 0                 not null comment '学习时长(秒)',
-    count      int      default 1                 not null comment '学习数量',
-    points     int      default 0                 not null comment '获得积分',
-    experience int      default 0                 not null comment '获得经验值',
-    remark     varchar(512)                       null comment '备注',
-    createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    index idx_userId (userId),
-    index idx_recordDate (recordDate),
-    index idx_recordType (recordType)
-    ) comment '用户学习记录' collate = utf8mb4_unicode_ci;
+    id           BIGINT AUTO_INCREMENT COMMENT 'id' PRIMARY KEY,
+    userId       BIGINT                             NOT NULL COMMENT '用户id',
+    recordDate   DATE                               NOT NULL COMMENT '记录日期',
+    recordType   VARCHAR(64)                        NOT NULL COMMENT '记录类型，如：word_card, listening, course等',
+    relatedId    BIGINT                             NULL COMMENT '关联ID，如单词ID、课程ID等',
+    lessonNumber INT      DEFAULT 0                 NOT NULL COMMENT '课程中的课次或子活动编号',
+    duration     INT      DEFAULT 0                 NOT NULL COMMENT '学习时长(秒)',
+    count        INT      DEFAULT 1                 NOT NULL COMMENT '学习数量',
+    points       INT      DEFAULT 0                 NOT NULL COMMENT '获得积分',
+    experience   INT      DEFAULT 0                 NOT NULL COMMENT '获得经验值',
+    accuracy     DECIMAL(5,2) DEFAULT 0            NOT NULL COMMENT '正确率(百分比)',
+    status       VARCHAR(32) DEFAULT 'completed'   NOT NULL COMMENT '活动状态，如：in_progress, completed, failed',
+    remark       VARCHAR(512)                       NULL COMMENT '备注',
+    createTime   DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime   DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_userId (userId),
+    INDEX idx_recordDate (recordDate),
+    INDEX idx_recordType (recordType),
+    UNIQUE INDEX idx_unique_record (userId, recordDate, recordType, relatedId)
 
+) COMMENT '用户学习记录' COLLATE = utf8mb4_unicode_ci;
 
--- 切换库
-use smart_class;
 
 -- 成就定义表
 create table if not exists achievement
@@ -346,9 +400,6 @@ create table if not exists user_milestone
     unique uk_user_milestone (userId, milestoneId)
     ) comment '用户里程碑' collate = utf8mb4_unicode_ci;
 
--- 切换库
-use smart_class;
-
 -- 公告表
 create table if not exists announcement
 (
@@ -383,8 +434,6 @@ create table if not exists announcement_read
     unique uk_announcement_user (announcementId, userId)
     ) comment '公告阅读记录' collate = utf8mb4_unicode_ci;
 
--- 切换库
-use smart_class;
 
 -- 课程分类表
 create table if not exists course_category
