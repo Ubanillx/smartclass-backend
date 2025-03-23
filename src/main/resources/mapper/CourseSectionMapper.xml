@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.CourseSectionMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.CourseSection">
+            <id property="id" column="id" />
+            <result property="courseId" column="courseId" />
+            <result property="chapterId" column="chapterId" />
+            <result property="title" column="title" />
+            <result property="description" column="description" />
+            <result property="videoUrl" column="videoUrl" />
+            <result property="duration" column="duration" />
+            <result property="sort" column="sort" />
+            <result property="isFree" column="isFree" />
+            <result property="resourceType" column="resourceType" />
+            <result property="resourceUrl" column="resourceUrl" />
+            <result property="adminId" column="adminId" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,courseId,chapterId,title,description,videoUrl,
+        duration,sort,isFree,resourceType,resourceUrl,
+        adminId,createTime,updateTime,isDelete
+    </sql>
+</mapper>
