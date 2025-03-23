@@ -37,6 +37,52 @@ public class CosClientConfig {
      * 桶名
      */
     private String bucket;
+    
+    /**
+     * 文件上传配置
+     */
+    private UploadConfig upload = new UploadConfig();
+    
+    /**
+     * 文件上传配置类
+     */
+    @Data
+    public static class UploadConfig {
+        /**
+         * 最大头像大小（MB）
+         */
+        private int maxAvatarSize = 2;
+        
+        /**
+         * 最大视频大小（MB）
+         */
+        private int maxVideoSize = 100;
+        
+        /**
+         * 最大文档大小（MB）
+         */
+        private int maxDocumentSize = 20;
+        
+        /**
+         * 最大资料大小（MB）
+         */
+        private int maxMaterialSize = 50;
+        
+        /**
+         * 允许的视频类型
+         */
+        private String allowedVideoTypes = "mp4,avi,mov,flv,wmv";
+        
+        /**
+         * 允许的文档类型
+         */
+        private String allowedDocumentTypes = "pdf,doc,docx,ppt,pptx,xls,xlsx,txt";
+        
+        /**
+         * 允许的资料类型
+         */
+        private String allowedMaterialTypes = "pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,rar,7z";
+    }
 
     @Bean
     public COSClient cosClient() {
