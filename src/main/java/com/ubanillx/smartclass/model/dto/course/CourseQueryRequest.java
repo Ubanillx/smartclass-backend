@@ -10,7 +10,7 @@ import java.util.Date;
 
 /**
  * 课程查询请求
-*/
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CourseQueryRequest extends PageRequest implements Serializable {
@@ -18,16 +18,11 @@ public class CourseQueryRequest extends PageRequest implements Serializable {
      * id
      */
     private Long id;
-
+    
     /**
      * 课程标题
      */
     private String title;
-
-    /**
-     * 课程副标题
-     */
-    private String subtitle;
 
     /**
      * 课程类型：0-公开课，1-付费课，2-会员课
@@ -55,19 +50,9 @@ public class CourseQueryRequest extends PageRequest implements Serializable {
     private Long teacherId;
 
     /**
-     * 最低价格
+     * 创建者id
      */
-    private BigDecimal minPrice;
-    
-    /**
-     * 最高价格
-     */
-    private BigDecimal maxPrice;
-
-    /**
-     * 最低评分
-     */
-    private BigDecimal minRating;
+    private Long userId;
 
     /**
      * 标签，JSON数组格式
@@ -75,14 +60,24 @@ public class CourseQueryRequest extends PageRequest implements Serializable {
     private String tags;
 
     /**
-     * 创建管理员id
+     * 最小价格
      */
-    private Long adminId;
+    private BigDecimal minPrice;
+
+    /**
+     * 最大价格
+     */
+    private BigDecimal maxPrice;
 
     /**
      * 创建时间
      */
     private Date createTime;
+
+    /**
+     * 更新时间
+     */
+    private Date updateTime;
 
     private static final long serialVersionUID = 1L;
 }
