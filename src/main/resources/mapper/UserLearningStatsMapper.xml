@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.UserLearningStatsMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.UserLearningStats">
+            <id property="id" column="id" />
+            <result property="userId" column="userId" />
+            <result property="level" column="level" />
+            <result property="experience" column="experience" />
+            <result property="nextLevelExp" column="nextLevelExp" />
+            <result property="learningDays" column="learningDays" />
+            <result property="continuousCheckIn" column="continuousCheckIn" />
+            <result property="totalCheckIn" column="totalCheckIn" />
+            <result property="totalPoints" column="totalPoints" />
+            <result property="totalBadges" column="totalBadges" />
+            <result property="lastCheckInTime" column="lastCheckInTime" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,level,experience,nextLevelExp,learningDays,
+        continuousCheckIn,totalCheckIn,totalPoints,totalBadges,lastCheckInTime,
+        createTime,updateTime
+    </sql>
+</mapper>
