@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.UserDailyWordMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.UserDailyWord">
+            <id property="id" column="id" />
+            <result property="userId" column="userId" />
+            <result property="wordId" column="wordId" />
+            <result property="isStudied" column="isStudied" />
+            <result property="studyTime" column="studyTime" />
+            <result property="isLiked" column="isLiked" />
+            <result property="likeTime" column="likeTime" />
+            <result property="isCollected" column="isCollected" />
+            <result property="collectTime" column="collectTime" />
+            <result property="noteContent" column="noteContent" />
+            <result property="noteTime" column="noteTime" />
+            <result property="masteryLevel" column="masteryLevel" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,wordId,isStudied,studyTime,isLiked,likeTime,isCollected,
+        collectTime,noteContent,noteTime,masteryLevel,createTime,
+        updateTime
+    </sql>
+    
+    <!-- 获取用户收藏的单词列表 -->
+    <select id="listFavourWordByPage" resultType="com.ubanillx.smartclass.model.entity.DailyWord">
+        select w.*
+        from daily_word w
+        join user_daily_word udw on w.id = udw.wordId
+        where udw.userId = #{favourUserId}
+        and udw.isCollected = 1
+        and w.is_delete = 0
+        ${ew.customSqlSegment}
+    </select>
+    
+    <!-- 获取用户点赞的单词列表 -->
+    <select id="listThumbWordByPage" resultType="com.ubanillx.smartclass.model.entity.DailyWord">
+        select w.*
+        from daily_word w
+        join user_daily_word udw on w.id = udw.wordId
+        where udw.userId = #{thumbUserId}
+        and udw.isLiked = 1
+        and w.is_delete = 0
+        ${ew.customSqlSegment}
+    </select>
+</mapper>
