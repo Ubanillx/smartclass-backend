@@ -82,7 +82,7 @@ public class UserController {
      * @return
      */
     @PostMapping("/register/phone")
-    public BaseResponse<Long> userRegister(@RequestBody UserRegisterByPhoneRequest userRegisterByPhoneRequest) {
+    public BaseResponse<Long> userRegisterByPhone(@RequestBody UserRegisterByPhoneRequest userRegisterByPhoneRequest) {
         if (userRegisterByPhoneRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -126,7 +126,7 @@ public class UserController {
          * @return
          */
         @PostMapping("/login/phone")
-        public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginByPhoneRequest userLoginByPhoneRequest, HttpServletRequest request) {
+        public BaseResponse<LoginUserVO> userLoginByPhone(@RequestBody UserLoginByPhoneRequest userLoginByPhoneRequest, HttpServletRequest request) {
             if (userLoginByPhoneRequest == null) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR);
             }
