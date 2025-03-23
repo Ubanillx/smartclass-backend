@@ -4,10 +4,11 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
- * 课程创建请求
-*/
+ * 添加课程请求
+ */
 @Data
 public class CourseAddRequest implements Serializable {
 
@@ -65,7 +66,22 @@ public class CourseAddRequest implements Serializable {
      * 讲师id
      */
     private Long teacherId;
-    
+
+    /**
+     * 总时长(分钟)
+     */
+    private Integer totalDuration;
+
+    /**
+     * 总章节数
+     */
+    private Integer totalChapters;
+
+    /**
+     * 总小节数
+     */
+    private Integer totalSections;
+
     /**
      * 标签，JSON数组格式
      */
