@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.UserLevelMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.UserLevel">
+            <id property="id" column="id" />
+            <result property="level" column="level" />
+            <result property="levelName" column="levelName" />
+            <result property="iconUrl" column="iconUrl" />
+            <result property="minExperience" column="minExperience" />
+            <result property="maxExperience" column="maxExperience" />
+            <result property="description" column="description" />
+            <result property="privileges" column="privileges" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,level,levelName,iconUrl,minExperience,maxExperience,
+        description,privileges,createTime,updateTime,isDelete
+    </sql>
+</mapper>
