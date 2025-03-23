@@ -1,6 +1,4 @@
 # 公共配置文件
-# @author <a href="https://github.com/liyupi">程序员鱼皮</a>
-# @from <a href="https://yupi.icu">编程导航知识星球</a>
 spring:
   application:
     name: smartclass-ubanillx
@@ -14,7 +12,7 @@ spring:
   # session 配置
   session:
     # todo 取消注释开启分布式 session（须先配置 Redis）
-#    store-type: redis
+    store-type: redis
     # 30 天过期
     timeout: 2592000
   # 数据库配置
@@ -42,7 +40,8 @@ spring:
   servlet:
     multipart:
       # 大小限制
-      max-file-size: 10MB
+      max-file-size: 100MB
+      max-request-size: 100MB
 server:
   address: 0.0.0.0
   port: 12345
@@ -86,10 +85,21 @@ wx:
 # todo 需替换配置
 cos:
   client:
-    accessKey: xxx
-    secretKey: xxx
-    region: xxx
-    bucket: xxx
+    accessKey: AKID48zeCcu44wnS9nJqCLH1Zu1ENLBpHsQr
+    secretKey: XxOva6RaYXQAi8PYYUGsLdkePyMbgbLr
+    region: ap-nanjing
+    bucket: smart-class-1329220530
+    # 文件上传配置
+    upload:
+      # 最大上传大小配置（单位：MB）
+      max-avatar-size: 2
+      max-video-size: 100
+      max-document-size: 20
+      max-material-size: 50
+      # 允许的文件类型
+      allowed-video-types: mp4,avi,mov,flv,wmv
+      allowed-document-types: pdf,doc,docx,ppt,pptx,xls,xlsx,txt
+      allowed-material-types: pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,rar,7z
 # 接口文档配置
 knife4j:
   enable: true
