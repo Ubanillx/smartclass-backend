@@ -1,5 +1,6 @@
 package com.ubanillx.smartclass.utils;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -18,5 +19,19 @@ public class SqlUtils {
             return false;
         }
         return !StringUtils.containsAny(sortField, "=", "(", ")", " ");
+    }
+    
+    /**
+     * 设置默认排序
+     * 
+     * @param queryWrapper 查询条件
+     * @param sortField 排序字段
+     * @param sortOrder 排序顺序
+     * @param <T> 查询实体类型
+     */
+    public static <T> void setDefaultOrder(QueryWrapper<T> queryWrapper, String sortField, String sortOrder) {
+        if (SqlUtils.validSortField(sortField)) {
+            queryWrapper.orderBy(true, "asc".equalsIgnoreCase(sortOrder), sortField);
+        }
     }
 }
