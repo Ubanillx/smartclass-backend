@@ -6,8 +6,22 @@ package com.ubanillx.smartclass.constant;
 public interface FileConstant {
 
     /**
-     * COS 访问地址
-     * todo 需替换配置
+     * 1MB大小
      */
-    String COS_HOST = "https://yupi.icu";
+    long ONE_MB = 1024 * 1024L;
+    
+    /**
+     * 10MB大小
+     */
+    long TEN_MB = 10 * 1024 * 1024L;
+    
+    /**
+     * 50MB大小
+     */
+    long FIFTY_MB = 50 * 1024 * 1024L;
+    
+    /**
+     * 100MB大小
+     */
+    long ONE_HUNDRED_MB = 100 * 1024 * 1024L;
 }

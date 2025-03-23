@@ -1,20 +1,17 @@
 package com.ubanillx.smartclass.controller;
 
-import cn.hutool.core.io.FileUtil;
 import com.ubanillx.smartclass.common.BaseResponse;
-import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.common.ResultUtils;
-import com.ubanillx.smartclass.constant.FileConstant;
+import com.ubanillx.smartclass.common.ErrorCode;
+import com.ubanillx.smartclass.constant.UserConstant;
 import com.ubanillx.smartclass.exception.BusinessException;
+import com.ubanillx.smartclass.exception.ThrowUtils;
 import com.ubanillx.smartclass.manager.CosManager;
 import com.ubanillx.smartclass.model.dto.file.UploadFileRequest;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.enums.FileUploadBizEnum;
 import com.ubanillx.smartclass.service.UserService;
-import java.io.File;
-import java.util.Arrays;
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import com.ubanillx.smartclass.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,9 +20,14 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.util.Arrays;
+
 /**
  * 文件接口
-*/
+ */
 @RestController
 @RequestMapping("/file")
 @Slf4j
@@ -47,7 +49,7 @@ public class FileController {
      */
     @PostMapping("/upload")
     public BaseResponse<String> uploadFile(@RequestPart("file") MultipartFile multipartFile,
-            UploadFileRequest uploadFileRequest, HttpServletRequest request) {
+                                          UploadFileRequest uploadFileRequest, HttpServletRequest request) {
         String biz = uploadFileRequest.getBiz();
         FileUploadBizEnum fileUploadBizEnum = FileUploadBizEnum.getEnumByValue(biz);
         if (fileUploadBizEnum == null) {
@@ -65,8 +67,8 @@ public class FileController {
             file = File.createTempFile(filepath, null);
             multipartFile.transferTo(file);
             cosManager.putObject(filepath, file);
-            // 返回可访问地址
-            return ResultUtils.success(FileConstant.COS_HOST + filepath);
+            // 返回可访问地址，使用cosManager的方法获取完整URL
+            return ResultUtils.success(cosManager.uploadFile(multipartFile, fileUploadBizEnum));
         } catch (Exception e) {
             log.error("file upload error, filepath = " + filepath, e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
@@ -80,6 +82,69 @@ public class FileController {
             }
         }
     }
+    
+    /**
+     * 上传头像
+     * 
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    @PostMapping("/upload/avatar")
+    public BaseResponse<String> uploadAvatar(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        // 校验文件大小和类型
+        String url = cosManager.uploadFile(multipartFile, FileUploadBizEnum.USER_AVATAR);
+        // 更新用户头像
+        User user = new User();
+        user.setId(loginUser.getId());
+        user.setUserAvatar(url);
+        boolean result = userService.updateById(user);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(url);
+    }
+    
+    /**
+     * 上传视频
+     * 
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    @PostMapping("/upload/video")
+    public BaseResponse<String> uploadVideo(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest request) {
+        userService.getLoginUser(request);
+        String url = cosManager.uploadFile(multipartFile, FileUploadBizEnum.VIDEO);
+        return ResultUtils.success(url);
+    }
+    
+    /**
+     * 上传文档
+     * 
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    @PostMapping("/upload/document")
+    public BaseResponse<String> uploadDocument(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest request) {
+        userService.getLoginUser(request);
+        String url = cosManager.uploadFile(multipartFile, FileUploadBizEnum.DOCUMENT);
+        return ResultUtils.success(url);
+    }
+    
+    /**
+     * 上传课程资料
+     * 
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    @PostMapping("/upload/material")
+    public BaseResponse<String> uploadMaterial(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest request) {
+        userService.getLoginUser(request);
+        String url = cosManager.uploadFile(multipartFile, FileUploadBizEnum.MATERIAL);
+        return ResultUtils.success(url);
+    }
 
     /**
      * 校验文件
@@ -92,9 +157,8 @@ public class FileController {
         long fileSize = multipartFile.getSize();
         // 文件后缀
         String fileSuffix = FileUtil.getSuffix(multipartFile.getOriginalFilename());
-        final long ONE_M = 1024 * 1024L;
         if (FileUploadBizEnum.USER_AVATAR.equals(fileUploadBizEnum)) {
-            if (fileSize > ONE_M) {
+            if (fileSize > 1024 * 1024L) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件大小不能超过 1M");
             }
             if (!Arrays.asList("jpeg", "jpg", "svg", "png", "webp").contains(fileSuffix)) {
