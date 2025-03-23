@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.UserArticleRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.dto.UserArticleRecord">
+            <id property="id" column="id" />
+            <result property="userId" column="userId" />
+            <result property="articleId" column="articleId" />
+            <result property="readStatus" column="readStatus" />
+            <result property="readProgress" column="readProgress" />
+            <result property="isLiked" column="isLiked" />
+            <result property="userNotes" column="userNotes" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,articleId,readStatus,readProgress,isLiked,
+        userNotes,createTime,updateTime
+    </sql>
+</mapper>
