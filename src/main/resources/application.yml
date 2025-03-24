@@ -85,8 +85,8 @@ wx:
 # todo 需替换配置
 cos:
   client:
-    accessKey: xxx
-    secretKey: xxx
+    accessKey: AKID48zeCcu44wnS9nJqCLH1Zu1ENLBpHsQr
+    secretKey: XxOva6RaYXQAi8PYYUGsLdkePyMbgbLr
     region: ap-nanjing
     bucket: smart-class-1329220530
     # 文件上传配置
@@ -111,3 +111,8 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.ubanillx.smartclass.controller
+# Dify API配置
+dify:
+  base-url: http://10.0.124.181/v1
+  chat-messages-path: /chat-messages
+  user-prefix: smartclass_user_
