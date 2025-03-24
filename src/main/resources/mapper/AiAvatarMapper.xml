@@ -7,23 +7,19 @@
     <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.AiAvatar">
             <id property="id" column="id" />
             <result property="name" column="name" />
+            <result property="baseUrl" column="baseUrl" />
             <result property="description" column="description" />
-            <result property="avatarUrl" column="avatarUrl" />
+            <result property="avatarImgUrl" column="avatarImgUrl" />
+            <result property="avatarAuth" column="avatarAuth" />
             <result property="tags" column="tags" />
-            <result property="category" column="category" />
             <result property="personality" column="personality" />
             <result property="abilities" column="abilities" />
-            <result property="promptTemplate" column="promptTemplate" />
-            <result property="apiUrl" column="apiUrl" />
-            <result property="apiKey" column="apiKey" />
-            <result property="modelType" column="modelType" />
-            <result property="modelConfig" column="modelConfig" />
             <result property="isPublic" column="isPublic" />
             <result property="status" column="status" />
             <result property="usageCount" column="usageCount" />
             <result property="rating" column="rating" />
             <result property="ratingCount" column="ratingCount" />
-            <result property="adminId" column="adminId" />
+            <result property="creatorId" column="creatorId" />
             <result property="sort" column="sort" />
             <result property="createTime" column="createTime" />
             <result property="updateTime" column="updateTime" />
@@ -31,10 +27,9 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,name,description,avatarUrl,tags,category,
-        personality,abilities,promptTemplate,apiUrl,apiKey,
-        modelType,modelConfig,isPublic,status,usageCount,
-        rating,ratingCount,adminId,sort,createTime,
-        updateTime,isDelete
+        id,name,baseUrl,description,avatarImgUrl,avatarAuth,
+        tags,personality,abilities,isPublic,status,
+        usageCount,rating,ratingCount,creatorId,sort,
+        createTime,updateTime,isDelete
     </sql>
 </mapper>
