@@ -89,5 +89,10 @@ public class AiAvatarQueryRequest extends PageRequest implements Serializable {
      */
     private Date createTime;
 
+    /**
+     * 创建者id
+     */
+    private Long creatorId;
+
     private static final long serialVersionUID = 1L;
 }
