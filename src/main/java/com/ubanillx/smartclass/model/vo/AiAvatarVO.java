@@ -6,8 +6,8 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * AI分身视图
-*/
+ * AI分身视图对象
+ */
 @Data
 public class AiAvatarVO implements Serializable {
 
@@ -22,6 +22,11 @@ public class AiAvatarVO implements Serializable {
     private String name;
 
     /**
+     * 请求地址
+     */
+    private String baseUrl;
+
+    /**
      * AI分身描述
      */
     private String description;
@@ -29,17 +34,12 @@ public class AiAvatarVO implements Serializable {
     /**
      * AI分身头像URL
      */
-    private String avatarUrl;
+    private String avatarImgUrl;
 
     /**
      * 标签，JSON数组格式
      */
     private String tags;
-
-    /**
-     * 分类，如：学习助手、语言教练、职业顾问等
-     */
-    private String category;
 
     /**
      * 性格特点描述
@@ -50,11 +50,6 @@ public class AiAvatarVO implements Serializable {
      * 能力描述
      */
     private String abilities;
-
-    /**
-     * 模型类型，如：GPT-4、Claude等
-     */
-    private String modelType;
 
     /**
      * 是否公开：0-否，1-是
@@ -82,6 +77,11 @@ public class AiAvatarVO implements Serializable {
     private Integer ratingCount;
 
     /**
+     * 创建者id
+     */
+    private Long creatorId;
+
+    /**
      * 排序，数字越小排序越靠前
      */
     private Integer sort;
@@ -90,6 +90,11 @@ public class AiAvatarVO implements Serializable {
      * 创建时间
      */
     private Date createTime;
+
+    /**
+     * 更新时间
+     */
+    private Date updateTime;
 
     private static final long serialVersionUID = 1L;
 } 
