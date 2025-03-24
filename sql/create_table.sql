@@ -32,7 +32,7 @@ create table if not exists user
     updateTime   datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete     tinyint      default 0                 not null comment '是否删除',
     index idx_unionId (unionId)
-    ) comment '用户' collate = utf8mb4_unicode_ci;
+) comment '用户' collate = utf8mb4_unicode_ci;
 
 -- 帖子表
 create table if not exists post
@@ -48,7 +48,7 @@ create table if not exists post
     updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete   tinyint  default 0                 not null comment '是否删除',
     index idx_userId (userId)
-    ) comment '帖子' collate = utf8mb4_unicode_ci;
+) comment '帖子' collate = utf8mb4_unicode_ci;
 
 -- 帖子点赞表（硬删除）
 create table if not exists post_thumb
@@ -60,7 +60,7 @@ create table if not exists post_thumb
     updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     index idx_postId (postId),
     index idx_userId (userId)
-    ) comment '帖子点赞';
+) comment '帖子点赞';
 
 -- 帖子收藏表（硬删除）
 create table if not exists post_favour
@@ -72,7 +72,7 @@ create table if not exists post_favour
     updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     index idx_postId (postId),
     index idx_userId (userId)
-    ) comment '帖子收藏';
+) comment '帖子收藏';
 
 -- 用户等级表
 create table if not exists user_level
@@ -89,7 +89,7 @@ create table if not exists user_level
     updateTime    datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete      tinyint  default 0                 not null comment '是否删除',
     index idx_level (level)
-    ) comment '用户等级' collate = utf8mb4_unicode_ci;
+) comment '用户等级' collate = utf8mb4_unicode_ci;
 
 -- 用户学习统计表
 create table if not exists user_learning_stats
@@ -112,7 +112,7 @@ create table if not exists user_learning_stats
     index idx_experience (experience),
     index idx_learningDays (learningDays),
     index idx_continuousCheckIn (continuousCheckIn)
-    ) comment '用户学习统计' collate = utf8mb4_unicode_ci;
+) comment '用户学习统计' collate = utf8mb4_unicode_ci;
 
 -- 用户与每日文章关联表
 CREATE TABLE IF NOT EXISTS user_daily_article
@@ -133,7 +133,7 @@ CREATE TABLE IF NOT EXISTS user_daily_article
     INDEX idx_userId (userId),
     INDEX idx_articleId (articleId),
     UNIQUE uk_user_article (userId, articleId)
-    ) COMMENT '用户与每日文章关联' COLLATE = utf8mb4_unicode_ci;
+) COMMENT '用户与每日文章关联' COLLATE = utf8mb4_unicode_ci;
 
 -- 用户与每日单词关联表
 CREATE TABLE IF NOT EXISTS user_daily_word
@@ -186,7 +186,7 @@ create table if not exists user_daily_goal
     index idx_userId (userId),
     index idx_goalDate (goalDate),
     unique uk_user_date (userId, goalDate)
-    ) comment '用户每日学习目标' collate = utf8mb4_unicode_ci;
+) comment '用户每日学习目标' collate = utf8mb4_unicode_ci;
 
 -- 学习目标类型表
 create table if not exists goal_type
@@ -210,7 +210,7 @@ create table if not exists goal_type
     isDelete     tinyint  default 0                 not null comment '是否删除',
     index idx_code (code),
     index idx_category (category)
-    ) comment '学习目标类型' collate = utf8mb4_unicode_ci;
+) comment '学习目标类型' collate = utf8mb4_unicode_ci;
 
 -- 用户学习目标项表
 create table if not exists user_goal_item
@@ -236,7 +236,7 @@ create table if not exists user_goal_item
     index idx_goalTypeId (goalTypeId),
     index idx_goalDate (goalDate),
     index idx_isCompleted (isCompleted)
-    ) comment '用户学习目标项' collate = utf8mb4_unicode_ci;
+) comment '用户学习目标项' collate = utf8mb4_unicode_ci;
 
 -- 用户学习记录表
 CREATE TABLE IF NOT EXISTS user_learning_record
@@ -292,7 +292,7 @@ create table if not exists achievement
     index idx_level (level),
     index idx_conditionType (conditionType),
     index idx_sort (sort)
-    ) comment '成就定义' collate = utf8mb4_unicode_ci;
+) comment '成就定义' collate = utf8mb4_unicode_ci;
 
 -- 用户成就表
 create table if not exists user_achievement
@@ -313,7 +313,7 @@ create table if not exists user_achievement
     index idx_achievementId (achievementId),
     index idx_isCompleted (isCompleted),
     unique uk_user_achievement (userId, achievementId)
-    ) comment '用户成就' collate = utf8mb4_unicode_ci;
+) comment '用户成就' collate = utf8mb4_unicode_ci;
 
 -- 成就展示配置表
 create table if not exists achievement_display
@@ -336,7 +336,7 @@ create table if not exists achievement_display
     index idx_achievementId (achievementId),
     index idx_displayType (displayType),
     index idx_sort (sort)
-    ) comment '成就展示配置' collate = utf8mb4_unicode_ci;
+) comment '成就展示配置' collate = utf8mb4_unicode_ci;
 
 -- 用户成就展示记录表
 create table if not exists user_achievement_display
@@ -357,7 +357,7 @@ create table if not exists user_achievement_display
     index idx_achievementId (achievementId),
     index idx_achievementDisplayId (achievementDisplayId),
     unique uk_user_achievement_display (userId, achievementId, achievementDisplayId)
-    ) comment '用户成就展示记录' collate = utf8mb4_unicode_ci;
+) comment '用户成就展示记录' collate = utf8mb4_unicode_ci;
 
 -- 成就里程碑表
 create table if not exists achievement_milestone
@@ -379,7 +379,7 @@ create table if not exists achievement_milestone
     index idx_category (category),
     index idx_requiredPoints (requiredPoints),
     index idx_sort (sort)
-    ) comment '成就里程碑' collate = utf8mb4_unicode_ci;
+) comment '成就里程碑' collate = utf8mb4_unicode_ci;
 
 -- 用户里程碑表
 create table if not exists user_milestone
@@ -398,7 +398,7 @@ create table if not exists user_milestone
     index idx_milestoneId (milestoneId),
     index idx_isCompleted (isCompleted),
     unique uk_user_milestone (userId, milestoneId)
-    ) comment '用户里程碑' collate = utf8mb4_unicode_ci;
+) comment '用户里程碑' collate = utf8mb4_unicode_ci;
 
 -- 公告表
 create table if not exists announcement
@@ -419,7 +419,7 @@ create table if not exists announcement
     index idx_adminId (adminId),
     index idx_status (status),
     index idx_priority (priority)
-    ) comment '系统公告' collate = utf8mb4_unicode_ci;
+) comment '系统公告' collate = utf8mb4_unicode_ci;
 
 -- 公告阅读记录表
 create table if not exists announcement_read
@@ -432,7 +432,7 @@ create table if not exists announcement_read
     index idx_announcementId (announcementId),
     index idx_userId (userId),
     unique uk_announcement_user (announcementId, userId)
-    ) comment '公告阅读记录' collate = utf8mb4_unicode_ci;
+) comment '公告阅读记录' collate = utf8mb4_unicode_ci;
 
 
 -- 课程分类表
@@ -450,7 +450,7 @@ create table if not exists course_category
     isDelete    tinyint  default 0                 not null comment '是否删除',
     index idx_parentId (parentId),
     index idx_sort (sort)
-    ) comment '课程分类' collate = utf8mb4_unicode_ci;
+) comment '课程分类' collate = utf8mb4_unicode_ci;
 
 -- 课程表
 create table if not exists course
@@ -486,7 +486,7 @@ create table if not exists course
     index idx_courseType (courseType),
     index idx_status (status),
     index idx_difficulty (difficulty)
-    ) comment '课程' collate = utf8mb4_unicode_ci;
+) comment '课程' collate = utf8mb4_unicode_ci;
 
 -- 讲师表
 create table if not exists teacher
@@ -503,7 +503,7 @@ create table if not exists teacher
     updateTime   datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete     tinyint  default 0                 not null comment '是否删除',
     index idx_userId (userId)
-    ) comment '讲师' collate = utf8mb4_unicode_ci;
+) comment '讲师' collate = utf8mb4_unicode_ci;
 
 -- 课程章节表
 create table if not exists course_chapter
@@ -519,7 +519,7 @@ create table if not exists course_chapter
     isDelete    tinyint  default 0                 not null comment '是否删除',
     index idx_courseId (courseId),
     index idx_sort (sort)
-    ) comment '课程章节' collate = utf8mb4_unicode_ci;
+) comment '课程章节' collate = utf8mb4_unicode_ci;
 
 -- 课程小节表
 create table if not exists course_section
@@ -542,7 +542,7 @@ create table if not exists course_section
     index idx_courseId (courseId),
     index idx_chapterId (chapterId),
     index idx_sort (sort)
-    ) comment '课程小节' collate = utf8mb4_unicode_ci;
+) comment '课程小节' collate = utf8mb4_unicode_ci;
 
 -- 课程资料表
 create table if not exists course_material
@@ -562,7 +562,7 @@ create table if not exists course_material
     isDelete      tinyint  default 0                 not null comment '是否删除',
     index idx_courseId (courseId),
     index idx_sort (sort)
-    ) comment '课程资料' collate = utf8mb4_unicode_ci;
+) comment '课程资料' collate = utf8mb4_unicode_ci;
 
 -- 用户课程购买记录表
 create table if not exists user_course
@@ -583,7 +583,7 @@ create table if not exists user_course
     index idx_courseId (courseId),
     index idx_orderNo (orderNo),
     unique uk_user_course (userId, courseId)
-    ) comment '用户课程购买记录' collate = utf8mb4_unicode_ci;
+) comment '用户课程购买记录' collate = utf8mb4_unicode_ci;
 
 -- 用户学习进度表
 create table if not exists user_course_progress
@@ -603,7 +603,7 @@ create table if not exists user_course_progress
     index idx_courseId (courseId),
     index idx_sectionId (sectionId),
     unique uk_user_section (userId, sectionId)
-    ) comment '用户学习进度' collate = utf8mb4_unicode_ci;
+) comment '用户学习进度' collate = utf8mb4_unicode_ci;
 
 -- 课程评价表
 create table if not exists course_review
@@ -624,7 +624,7 @@ create table if not exists course_review
     index idx_userId (userId),
     index idx_courseId (courseId),
     index idx_rating (rating)
-    ) comment '课程评价' collate = utf8mb4_unicode_ci;
+) comment '课程评价' collate = utf8mb4_unicode_ci;
 
 -- 课程收藏表
 create table if not exists course_favourite
@@ -637,7 +637,7 @@ create table if not exists course_favourite
     index idx_userId (userId),
     index idx_courseId (courseId),
     unique uk_user_course (userId, courseId)
-    ) comment '课程收藏' collate = utf8mb4_unicode_ci;
+) comment '课程收藏' collate = utf8mb4_unicode_ci;
 
 -- 聊天会话表
 create table if not exists chat_session
@@ -650,7 +650,7 @@ create table if not exists chat_session
     updateTime  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete    tinyint  default 0                 not null comment '是否删除',
     index idx_userId (userId)
-    ) comment 'AI聊天会话' collate = utf8mb4_unicode_ci;
+) comment 'AI聊天会话' collate = utf8mb4_unicode_ci;
 
 -- 聊天消息表
 create table if not exists chat_message
@@ -665,7 +665,7 @@ create table if not exists chat_message
     isDelete   tinyint  default 0                 not null comment '是否删除',
     index idx_sessionId (sessionId),
     index idx_userId (userId)
-    ) comment 'AI聊天消息' collate = utf8mb4_unicode_ci;
+) comment 'AI聊天消息' collate = utf8mb4_unicode_ci;
 
 -- 每日单词表
 create table if not exists daily_word
@@ -689,7 +689,7 @@ create table if not exists daily_word
     index idx_word (word),
     index idx_category (category),
     index idx_difficulty (difficulty)
-    ) comment '每日单词' collate = utf8mb4_unicode_ci;
+) comment '每日单词' collate = utf8mb4_unicode_ci;
 
 -- 每日文章表
 create table if not exists daily_article
@@ -716,7 +716,7 @@ create table if not exists daily_article
     index idx_publishDate (publishDate),
     index idx_category (category),
     index idx_difficulty (difficulty)
-    ) comment '每日文章' collate = utf8mb4_unicode_ci;
+) comment '每日文章' collate = utf8mb4_unicode_ci;
 
 -- 用户单词学习记录表
 create table if not exists user_word_record
@@ -733,7 +733,7 @@ create table if not exists user_word_record
     index idx_userId (userId),
     index idx_wordId (wordId),
     unique uk_user_word (userId, wordId)
-    ) comment '用户单词学习记录' collate = utf8mb4_unicode_ci;
+) comment '用户单词学习记录' collate = utf8mb4_unicode_ci;
 
 -- 用户文章阅读记录表
 create table if not exists user_article_record
@@ -750,40 +750,36 @@ create table if not exists user_article_record
     index idx_userId (userId),
     index idx_articleId (articleId),
     unique uk_user_article (userId, articleId)
-    ) comment '用户文章阅读记录' collate = utf8mb4_unicode_ci;
+) comment '用户文章阅读记录' collate = utf8mb4_unicode_ci;
 
 -- AI分身表
 create table if not exists ai_avatar
 (
     id             bigint auto_increment comment 'id' primary key,
     name           varchar(128)                            not null comment 'AI分身名称',
+    baseUrl        varchar(1024)                           null comment '请求地址',
     description    text                                    null comment 'AI分身描述',
-    avatarUrl      varchar(1024)                           null comment 'AI分身头像URL',
+    avatarImgUrl   varchar(1024)                           null comment 'AI分身头像URL',
+    avatarAuth     varchar(512)                            null comment 'AI分身鉴权，一串随机字符',
     tags           varchar(512)                            null comment '标签，JSON数组格式',
-    category       varchar(64)                             not null comment '分类，如：学习助手、语言教练、职业顾问等',
     personality    text                                    null comment '性格特点描述',
     abilities      text                                    null comment '能力描述',
-    promptTemplate text                                    null comment '提示词模板',
-    modelType      varchar(64)                             not null comment '模型类型，如：GPT-4、Claude等',
-    modelConfig    text                                    null comment '模型配置，JSON格式',
     isPublic       tinyint       default 1                 not null comment '是否公开：0-否，1-是',
     status         tinyint       default 1                 not null comment '状态：0-禁用，1-启用',
     usageCount     int           default 0                 not null comment '使用次数',
     rating         decimal(2, 1) default 0.0               not null comment '评分，1-5分',
     ratingCount    int           default 0                 not null comment '评分人数',
-    creatorId      bigint                                  not null comment '创建者id，可以是管理员或用户',
-    creatorType    varchar(32)                             not null comment '创建者类型：admin/user',
+    creatorId      bigint                                  not null comment '创建者id',
     sort           int           default 0                 not null comment '排序，数字越小排序越靠前',
     createTime     datetime      default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime     datetime      default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     isDelete       tinyint       default 0                 not null comment '是否删除',
-    index idx_category (category),
     index idx_tags (tags),
     index idx_creatorId (creatorId),
     index idx_status (status),
     index idx_sort (sort),
     index idx_usageCount (usageCount)
-    ) comment 'AI分身' collate = utf8mb4_unicode_ci;
+) comment 'AI分身' collate = utf8mb4_unicode_ci;
 
 -- 用户AI分身关联表
 create table if not exists user_ai_avatar
@@ -803,7 +799,7 @@ create table if not exists user_ai_avatar
     index idx_aiAvatarId (aiAvatarId),
     index idx_isFavorite (isFavorite),
     unique uk_user_avatar (userId, aiAvatarId)
-    ) comment '用户AI分身关联' collate = utf8mb4_unicode_ci;
+) comment '用户AI分身关联' collate = utf8mb4_unicode_ci;
 
 -- AI分身对话历史表
 create table if not exists ai_avatar_chat_history
@@ -812,6 +808,7 @@ create table if not exists ai_avatar_chat_history
     userId      bigint                             not null comment '用户id',
     aiAvatarId  bigint                             not null comment 'AI分身id',
     sessionId   varchar(64)                        not null comment '会话ID',
+    sessionName varchar(512)                       null comment '会话总结标题',
     messageType varchar(32)                        not null comment '消息类型：user/ai',
     content     text                               not null comment '消息内容',
     tokens      int      default 0                 not null comment '消息token数',
@@ -819,4 +816,23 @@ create table if not exists ai_avatar_chat_history
     index idx_userId (userId),
     index idx_aiAvatarId (aiAvatarId),
     index idx_sessionId (sessionId)
-    ) comment 'AI分身对话历史' collate = utf8mb4_unicode_ci;
+) comment 'AI分身对话历史' collate = utf8mb4_unicode_ci;
+
+-- 用户反馈表
+create table if not exists user_feedback
+(
+    id          bigint auto_increment comment 'id' primary key,
+    userId      bigint                             not null comment '用户ID',
+    feedbackType varchar(64)                       not null comment '反馈类型',
+    title       varchar(256)                       null comment '反馈标题',
+    content     text                               not null comment '反馈内容',
+    attachment  varchar(1024)                      null comment '附件URL',
+    status      tinyint  default 0                 not null comment '处理状态：0-待处理，1-处理中，2-已处理',
+    adminId     bigint                             null comment '处理管理员ID',
+    processTime datetime                           null comment '处理时间',
+    createTime  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete    tinyint  default 0                 not null comment '是否删除',
+    index idx_userId (userId),
+    index idx_status (status)
+) comment '用户反馈' collate = utf8mb4_unicode_ci;
