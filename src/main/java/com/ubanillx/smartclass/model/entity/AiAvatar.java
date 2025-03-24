@@ -1,7 +1,9 @@
 package com.ubanillx.smartclass.model.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
-
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -26,6 +28,11 @@ public class AiAvatar implements Serializable {
     private String name;
 
     /**
+     * 请求地址
+     */
+    private String baseUrl;
+
+    /**
      * AI分身描述
      */
     private String description;
@@ -33,17 +40,17 @@ public class AiAvatar implements Serializable {
     /**
      * AI分身头像URL
      */
-    private String avatarUrl;
+    private String avatarImgUrl;
+
+    /**
+     * AI分身鉴权，一串随机字符
+     */
+    private String avatarAuth;
 
     /**
      * 标签，JSON数组格式
      */
     private String tags;
-
-    /**
-     * 分类，如：学习助手、语言教练、职业顾问等
-     */
-    private String category;
 
     /**
      * 性格特点描述
@@ -54,31 +61,6 @@ public class AiAvatar implements Serializable {
      * 能力描述
      */
     private String abilities;
-
-    /**
-     * 提示词模板
-     */
-    private String promptTemplate;
-
-    /**
-     * API请求地址
-     */
-    private String apiUrl;
-
-    /**
-     * API密钥（加密存储）
-     */
-    private String apiKey;
-
-    /**
-     * 模型类型，如：GPT-4、Claude等
-     */
-    private String modelType;
-
-    /**
-     * 模型配置，JSON格式
-     */
-    private String modelConfig;
 
     /**
      * 是否公开：0-否，1-是
@@ -106,9 +88,9 @@ public class AiAvatar implements Serializable {
     private Integer ratingCount;
 
     /**
-     * 创建管理员id
+     * 创建者id
      */
-    private Long adminId;
+    private Long creatorId;
 
     /**
      * 排序，数字越小排序越靠前
@@ -128,7 +110,6 @@ public class AiAvatar implements Serializable {
     /**
      * 是否删除
      */
-    @TableLogic
     private Integer isDelete;
 
     @TableField(exist = false)
