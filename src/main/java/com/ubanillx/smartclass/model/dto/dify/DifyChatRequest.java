@@ -3,6 +3,7 @@ package com.ubanillx.smartclass.model.dto.dify;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,6 +41,12 @@ public class DifyChatRequest implements Serializable {
      * 自动生成标题
      */
     private Boolean auto_generate_name;
+    
+    /**
+     * 文件列表，支持图片等多模态输入
+     * 格式：[{"type":"image","transfer_method":"local_file","upload_file_id":"FILE_ID"}]
+     */
+    private List<Map<String, Object>> files;
     
     private static final long serialVersionUID = 1L;
 } 
