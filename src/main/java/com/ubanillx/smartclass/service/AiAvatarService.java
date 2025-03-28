@@ -2,6 +2,9 @@ package com.ubanillx.smartclass.service;
 
 import com.ubanillx.smartclass.model.entity.AiAvatar;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.ubanillx.smartclass.model.vo.AiAvatarBriefVO;
+
+import java.util.List;
 
 /**
 * @author liulo
@@ -10,4 +13,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface AiAvatarService extends IService<AiAvatar> {
 
+    /**
+     * 获取所有AI分身的简要信息列表
+     * 
+     * @return AI分身简要信息列表
+     */
+    List<AiAvatarBriefVO> listAllAiAvatarBrief();
 }
