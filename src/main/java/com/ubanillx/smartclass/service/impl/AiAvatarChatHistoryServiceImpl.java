@@ -9,11 +9,16 @@ import com.ubanillx.smartclass.model.entity.AiAvatar;
 import com.ubanillx.smartclass.model.entity.AiAvatarChatHistory;
 import com.ubanillx.smartclass.mapper.AiAvatarChatHistoryMapper;
 import com.ubanillx.smartclass.model.entity.User;
+import com.ubanillx.smartclass.model.vo.ChatMessageVO;
 import com.ubanillx.smartclass.model.vo.ChatSessionVO;
 import com.ubanillx.smartclass.service.AiAvatarChatHistoryService;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -28,11 +33,16 @@ import java.util.stream.Collectors;
 public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHistoryMapper, AiAvatarChatHistory>
     implements AiAvatarChatHistoryService {
     
+    private static final Logger log = LoggerFactory.getLogger(AiAvatarChatHistoryServiceImpl.class);
+    
     @Resource
     private AiAvatarMapper aiAvatarMapper;
     
     @Resource
     private UserMapper userMapper;
+    
+    @Resource
+    private ApplicationContext applicationContext;
     
     @Override
     @Transactional
@@ -276,5 +286,119 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         }
         
         return sessions;
+    }
+    
+    @Override
+    public List<ChatMessageVO> getUserMessages(Long userId, Long aiAvatarId) {
+        // 构建查询条件
+        QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        
+        if (aiAvatarId != null && aiAvatarId > 0) {
+            queryWrapper.eq("aiAvatarId", aiAvatarId);
+        }
+        
+        // 按时间倒序排列
+        queryWrapper.orderByDesc("createTime");
+        
+        // 查询数据
+        List<AiAvatarChatHistory> messageList = this.list(queryWrapper);
+        
+        // 转换为VO对象
+        List<ChatMessageVO> result = new ArrayList<>();
+        
+        for (AiAvatarChatHistory message : messageList) {
+            ChatMessageVO chatMessageVO = new ChatMessageVO();
+            BeanUtils.copyProperties(message, chatMessageVO);
+            
+            // 获取AI分身信息
+            AiAvatar aiAvatar = aiAvatarMapper.selectById(message.getAiAvatarId());
+            if (aiAvatar != null) {
+                chatMessageVO.setAiAvatarName(aiAvatar.getName());
+                chatMessageVO.setAiAvatarImgUrl(aiAvatar.getAvatarImgUrl());
+            }
+            
+            // 获取用户信息
+            User user = userMapper.selectById(message.getUserId());
+            if (user != null) {
+                chatMessageVO.setUserName(user.getUserName());
+                chatMessageVO.setUserAvatar(user.getUserAvatar());
+            }
+            
+            result.add(chatMessageVO);
+        }
+        
+        return result;
+    }
+    
+    @Override
+    public boolean updateSessionSummary(String sessionId, String summary) {
+        if (StringUtils.hasLength(sessionId) == false || StringUtils.hasLength(summary) == false) {
+            return false;
+        }
+        
+        // 查询会话中的所有消息
+        QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("session_id", sessionId);
+        
+        // 更新所有消息的会话名称
+        AiAvatarChatHistory updateEntity = new AiAvatarChatHistory();
+        updateEntity.setSessionName(summary);
+        
+        return this.update(updateEntity, queryWrapper);
+    }
+    
+    @Override
+    @Transactional
+    public boolean deleteSessionCompletely(String sessionId, Long userId, String baseUrl, String avatarAuth) {
+        if (!StringUtils.hasLength(sessionId) || userId == null) {
+            return false;
+        }
+        
+        // 验证用户是否有权限删除该会话
+        QueryWrapper<AiAvatarChatHistory> authQuery = new QueryWrapper<>();
+        authQuery.eq("session_id", sessionId)
+                .eq("user_id", userId)
+                .last("LIMIT 1");
+        
+        AiAvatarChatHistory chatHistory = this.getOne(authQuery);
+        
+        if (chatHistory == null) {
+            log.warn("会话不存在或用户无权限删除: sessionId={}, userId={}", sessionId, userId);
+            return false; // 会话不存在或用户无权限
+        }
+        
+        // 先删除Dify远程会话，使用延迟加载的方式获取DifyService
+        boolean difyDeleted = true;
+        if (StringUtils.hasLength(baseUrl) && StringUtils.hasLength(avatarAuth)) {
+            try {
+                // 从ApplicationContext中获取DifyService，避免循环依赖
+                Object difyServiceObj = applicationContext.getBean("difyServiceImpl");
+                // 反射调用deleteConversation方法
+                Class<?> clazz = difyServiceObj.getClass();
+                boolean result = (boolean) clazz.getMethod("deleteConversation", Long.class, String.class, String.class, String.class)
+                        .invoke(difyServiceObj, userId, sessionId, baseUrl, avatarAuth);
+                difyDeleted = result;
+                if (!difyDeleted) {
+                    log.warn("删除Dify远程会话失败: sessionId={}", sessionId);
+                    // 继续删除本地会话，不返回错误
+                }
+            } catch (Exception e) {
+                log.error("调用DifyService.deleteConversation方法异常", e);
+                // 继续删除本地会话，不返回错误
+            }
+        }
+        
+        // 删除本地会话记录
+        QueryWrapper<AiAvatarChatHistory> deleteQuery = new QueryWrapper<>();
+        deleteQuery.eq("session_id", sessionId);
+        
+        boolean localDeleted = this.remove(deleteQuery);
+        if (!localDeleted) {
+            log.error("删除本地会话记录失败: sessionId={}", sessionId);
+            return false;
+        }
+        
+        return true;
     }
 } 

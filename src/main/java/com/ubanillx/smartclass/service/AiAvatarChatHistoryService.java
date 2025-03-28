@@ -3,6 +3,7 @@ package com.ubanillx.smartclass.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ubanillx.smartclass.model.entity.AiAvatarChatHistory;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.ubanillx.smartclass.model.vo.ChatMessageVO;
 import com.ubanillx.smartclass.model.vo.ChatSessionVO;
 
 import java.util.List;
@@ -81,6 +82,17 @@ public interface AiAvatarChatHistoryService extends IService<AiAvatarChatHistory
     boolean deleteSession(String sessionId, Long userId);
     
     /**
+     * 完整删除会话（同时删除本地和远程Dify会话）
+     *
+     * @param sessionId 会话ID
+     * @param userId 用户ID (用于验证权限)
+     * @param baseUrl Dify API基础URL
+     * @param avatarAuth AI分身授权token
+     * @return 是否删除成功
+     */
+    boolean deleteSessionCompletely(String sessionId, Long userId, String baseUrl, String avatarAuth);
+    
+    /**
      * 获取用户最近的会话列表
      *
      * @param userId 用户ID
@@ -88,4 +100,22 @@ public interface AiAvatarChatHistoryService extends IService<AiAvatarChatHistory
      * @return 最近的会话列表
      */
     List<ChatSessionVO> getRecentSessions(Long userId, int limit);
+    
+    /**
+     * 获取用户的所有聊天消息
+     *
+     * @param userId 用户ID
+     * @param aiAvatarId AI分身ID (可选)
+     * @return 聊天消息VO列表
+     */
+    List<ChatMessageVO> getUserMessages(Long userId, Long aiAvatarId);
+    
+    /**
+     * 根据会话ID更新会话总结
+     * 
+     * @param sessionId 会话ID
+     * @param summary 会话总结
+     * @return 是否更新成功
+     */
+    boolean updateSessionSummary(String sessionId, String summary);
 }
