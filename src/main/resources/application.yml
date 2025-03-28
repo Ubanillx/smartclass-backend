@@ -113,6 +113,5 @@ knife4j:
           - com.ubanillx.smartclass.controller
 # Dify API配置
 dify:
-  base-url: http://10.0.124.181/v1
   chat-messages-path: /chat-messages
   user-prefix: smartclass_user_
