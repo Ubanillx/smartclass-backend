@@ -11,6 +11,7 @@ import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarQueryRequest;
 import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarUpdateRequest;
 import com.ubanillx.smartclass.model.entity.AiAvatar;
 import com.ubanillx.smartclass.model.entity.User;
+import com.ubanillx.smartclass.model.vo.AiAvatarBriefVO;
 import com.ubanillx.smartclass.model.vo.AiAvatarVO;
 import com.ubanillx.smartclass.service.AiAvatarService;
 import com.ubanillx.smartclass.service.UserService;
@@ -253,6 +254,17 @@ public class AiAvatarController {
         }).collect(Collectors.toList());
         aiAvatarVOPage.setRecords(aiAvatarVOList);
         return ResultUtils.success(aiAvatarVOPage);
+    }
+    
+    /**
+     * 获取所有AI分身的简要信息列表
+     * 
+     * @return 所有AI分身的简要信息
+     */
+    @GetMapping("/list/all")
+    public BaseResponse<List<AiAvatarBriefVO>> listAllAiAvatar() {
+        List<AiAvatarBriefVO> aiAvatarBriefList = aiAvatarService.listAllAiAvatarBrief();
+        return ResultUtils.success(aiAvatarBriefList);
     }
         
 } 
