@@ -212,11 +212,13 @@ public class DifyServiceImpl implements DifyService {
             log.info("Sending streaming request to Dify: {}", requestJson);
             
             // 同步发送请求获取响应
+            // 确保设置正确的Accept和Content-Type头部
             HttpResponse response = HttpRequest.post(url)
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + avatarAuth)
-                    .header("Accept", "text/event-stream")
+                    .header("Accept", "text/event-stream") // 明确指定接受SSE格式
                     .body(requestJson)
+                    .timeout(60000) // 设置60秒超时
                     .execute();
             
             if (!response.isOk()) {
@@ -248,42 +250,57 @@ public class DifyServiceImpl implements DifyService {
                             // 空行表示事件结束，处理累积的数据
                             if (eventData.length() > 0) {
                                 String data = eventData.toString();
-                                if (data.startsWith("data: ")) {
-                                    data = data.substring(6); // 移除 "data: " 前缀
-                                }
                                 
-                                try {
-                                    DifyStreamChunk chunk = JSONUtil.toBean(data, DifyStreamChunk.class);
+                                // 正确处理SSE格式：每条数据以 "data: " 开头
+                                if (data.startsWith("data: ")) {
+                                    String jsonData = data.substring(6); // 移除 "data: " 前缀
                                     
-                                    // 处理流式消息
-                                    if ("message".equals(chunk.getEvent())) {
-                                        // 累积完整响应
-                                        fullResponseRef.set(fullResponseRef.get() + chunk.getAnswer());
+                                    try {
+                                        // 将JSON字符串传递给回调
+                                        callback.onMessage(jsonData);
                                         
-                                        // 保存消息ID
-                                        if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
-                                            messageIdRef.set(chunk.getId());
+                                        // 解析JSON数据
+                                        DifyStreamChunk chunk = JSONUtil.toBean(jsonData, DifyStreamChunk.class);
+                                        
+                                        // 处理流式消息
+                                        if ("message".equals(chunk.getEvent())) {
+                                            // 累积完整响应
+                                            fullResponseRef.set(fullResponseRef.get() + (chunk.getAnswer() != null ? chunk.getAnswer() : ""));
+                                            
+                                            // 保存消息ID
+                                            if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
+                                                messageIdRef.set(chunk.getId());
+                                            }
+                                            
+                                            // 保存会话ID
+                                            if (chunk.getConversation_id() != null) {
+                                                conversationIdRef.set(chunk.getConversation_id());
+                                            }
+                                        } else if ("message_end".equals(chunk.getEvent())) {
+                                            // 处理消息结束事件
+                                            log.info("流式响应结束: {}", jsonData);
+                                        } else if ("error".equals(chunk.getEvent())) {
+                                            // 处理错误事件
+                                            log.error("流式响应错误: {}", jsonData);
+                                            callback.onError(new RuntimeException("Dify API 流式响应错误: " + jsonData));
                                         }
-                                        
-                                        // 保存会话ID
-                                        if (chunk.getConversation_id() != null) {
-                                            conversationIdRef.set(chunk.getConversation_id());
-                                        }
-                                        
-                                        // 回调处理
-                                        callback.onMessage(data);
+                                    } catch (Exception e) {
+                                        log.error("Error parsing stream chunk: {}", jsonData, e);
+                                        callback.onError(e);
                                     }
-                                } catch (Exception e) {
-                                    log.error("Error parsing stream chunk: {}", data, e);
-                                    callback.onError(e);
+                                } else if (data.startsWith("event: ")) {
+                                    // 处理事件类型，通常SSE可能包含事件类型
+                                    log.debug("SSE事件类型: {}", data);
+                                } else {
+                                    log.warn("未知的SSE数据格式: {}", data);
                                 }
                                 
                                 // 重置事件数据缓冲区
                                 eventData.setLength(0);
                             }
-                        } else if (line.startsWith("data: ")) {
-                            // 累积事件数据
-                            eventData.append(line);
+                        } else {
+                            // 累积事件数据，保留换行符以便于调试
+                            eventData.append(line).append("\n");
                         }
                     }
                     
@@ -303,11 +320,13 @@ public class DifyServiceImpl implements DifyService {
                     }
                     
                     // 保存到数据库
-                    boolean saved = aiAvatarChatHistoryService.saveMessage(
-                            userId, aiAvatarId, finalConversationId, "ai", fullResponse);
-                    
-                    if (!saved) {
-                        log.error("Failed to save AI response to database");
+                    if (!fullResponse.isEmpty()) {
+                        boolean saved = aiAvatarChatHistoryService.saveMessage(
+                                userId, aiAvatarId, finalConversationId, "ai", fullResponse);
+                        
+                        if (!saved) {
+                            log.error("Failed to save AI response to database");
+                        }
                     }
                     
                     // 处理完成
@@ -320,14 +339,7 @@ public class DifyServiceImpl implements DifyService {
             });
             
             // 创建一个消息对象返回，实际内容会被异步更新
-            AiAvatarChatHistory aiResponse = new AiAvatarChatHistory();
-            aiResponse.setUserId(userId);
-            aiResponse.setAiAvatarId(aiAvatarId);
-            aiResponse.setSessionId(sessionId);
-            aiResponse.setMessageType("ai");
-            aiResponse.setContent(""); // 初始为空，内容会被异步填充
-            aiResponse.setCreateTime(new Date());
-            
+            AiAvatarChatHistory aiResponse = chatMessageHelper.createEmptyAiResponse(userId, aiAvatarId, sessionId);
             return aiResponse;
             
         } catch (Exception e) {
@@ -814,11 +826,13 @@ public class DifyServiceImpl implements DifyService {
             log.info("Sending streaming request with files to Dify: {}", requestJson);
             
             // 同步发送请求获取响应
+            // 确保设置正确的Accept和Content-Type头部
             HttpResponse response = HttpRequest.post(url)
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + avatarAuth)
-                    .header("Accept", "text/event-stream")
+                    .header("Accept", "text/event-stream") // 明确指定接受SSE格式
                     .body(requestJson)
+                    .timeout(60000) // 设置60秒超时
                     .execute();
             
             if (!response.isOk()) {
@@ -851,45 +865,60 @@ public class DifyServiceImpl implements DifyService {
                             // 空行表示事件结束，处理累积的数据
                             if (eventData.length() > 0) {
                                 String data = eventData.toString();
-                                if (data.startsWith("data: ")) {
-                                    data = data.substring(6); // 移除 "data: " 前缀
-                                }
                                 
-                                try {
-                                    DifyStreamChunk chunk = JSONUtil.toBean(data, DifyStreamChunk.class);
+                                // 正确处理SSE格式：每条数据以 "data: " 开头
+                                if (data.startsWith("data: ")) {
+                                    String jsonData = data.substring(6); // 移除 "data: " 前缀
                                     
-                                    // 处理流式消息
-                                    if ("message".equals(chunk.getEvent())) {
-                                        // 累积完整响应
-                                        fullResponseRef.set(fullResponseRef.get() + chunk.getAnswer());
+                                    try {
+                                        // 将JSON字符串传递给回调
+                                        callback.onMessage(jsonData);
                                         
-                                        // 保存消息ID
-                                        if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
-                                            messageIdRef.set(chunk.getId());
+                                        // 解析JSON数据
+                                        DifyStreamChunk chunk = JSONUtil.toBean(jsonData, DifyStreamChunk.class);
+                                        
+                                        // 处理流式消息
+                                        if ("message".equals(chunk.getEvent())) {
+                                            // 累积完整响应
+                                            fullResponseRef.set(fullResponseRef.get() + (chunk.getAnswer() != null ? chunk.getAnswer() : ""));
+                                            
+                                            // 保存消息ID
+                                            if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
+                                                messageIdRef.set(chunk.getId());
+                                            }
+                                            
+                                            // 保存会话ID
+                                            if (chunk.getConversation_id() != null) {
+                                                conversationIdRef.set(chunk.getConversation_id());
+                                            }
+                                        } else if ("message_file".equals(chunk.getEvent())) {
+                                            // 处理文件消息事件
+                                            log.info("接收到文件消息: {}", jsonData);
+                                        } else if ("message_end".equals(chunk.getEvent())) {
+                                            // 处理消息结束事件
+                                            log.info("流式响应结束: {}", jsonData);
+                                        } else if ("error".equals(chunk.getEvent())) {
+                                            // 处理错误事件
+                                            log.error("流式响应错误: {}", jsonData);
+                                            callback.onError(new RuntimeException("Dify API 流式响应错误: " + jsonData));
                                         }
-                                        
-                                        // 保存会话ID
-                                        if (chunk.getConversation_id() != null) {
-                                            conversationIdRef.set(chunk.getConversation_id());
-                                        }
-                                        
-                                        // 回调处理
-                                        callback.onMessage(data);
-                                    } else if ("message_file".equals(chunk.getEvent())) {
-                                        // 处理文件消息事件
-                                        callback.onMessage(data);
+                                    } catch (Exception e) {
+                                        log.error("Error parsing stream chunk: {}", jsonData, e);
+                                        callback.onError(e);
                                     }
-                                } catch (Exception e) {
-                                    log.error("Error parsing stream chunk: {}", data, e);
-                                    callback.onError(e);
+                                } else if (data.startsWith("event: ")) {
+                                    // 处理事件类型，通常SSE可能包含事件类型
+                                    log.debug("SSE事件类型: {}", data);
+                                } else {
+                                    log.warn("未知的SSE数据格式: {}", data);
                                 }
                                 
                                 // 重置事件数据缓冲区
                                 eventData.setLength(0);
                             }
-                        } else if (line.startsWith("data: ")) {
-                            // 累积事件数据
-                            eventData.append(line);
+                        } else {
+                            // 累积事件数据，保留换行符以便于调试
+                            eventData.append(line).append("\n");
                         }
                     }
                     
@@ -909,11 +938,13 @@ public class DifyServiceImpl implements DifyService {
                     }
                     
                     // 保存到数据库
-                    boolean saved = aiAvatarChatHistoryService.saveMessage(
-                            userId, aiAvatarId, finalConversationId, "ai", fullResponse);
-                    
-                    if (!saved) {
-                        log.error("Failed to save AI response to database");
+                    if (!fullResponse.isEmpty()) {
+                        boolean saved = aiAvatarChatHistoryService.saveMessage(
+                                userId, aiAvatarId, finalConversationId, "ai", fullResponse);
+                        
+                        if (!saved) {
+                            log.error("Failed to save AI response to database");
+                        }
                     }
                     
                     // 处理完成
@@ -926,14 +957,7 @@ public class DifyServiceImpl implements DifyService {
             });
             
             // 创建一个消息对象返回，实际内容会被异步更新
-            AiAvatarChatHistory aiResponse = new AiAvatarChatHistory();
-            aiResponse.setUserId(userId);
-            aiResponse.setAiAvatarId(aiAvatarId);
-            aiResponse.setSessionId(sessionId);
-            aiResponse.setMessageType("ai");
-            aiResponse.setContent(""); // 初始为空，内容会被异步填充
-            aiResponse.setCreateTime(new Date());
-            
+            AiAvatarChatHistory aiResponse = chatMessageHelper.createEmptyAiResponse(userId, aiAvatarId, sessionId);
             return aiResponse;
             
         } catch (Exception e) {

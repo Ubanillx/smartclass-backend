@@ -91,30 +91,30 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
     public List<ChatSessionVO> getUserSessions(Long userId, Long aiAvatarId) {
         // 查询用户与AI分身的所有会话，获取会话ID和名称
         QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId);
+        queryWrapper.eq("userId", userId);
         
         if (aiAvatarId != null) {
-            queryWrapper.eq("ai_avatar_id", aiAvatarId);
+            queryWrapper.eq("aiAvatarId", aiAvatarId);
         }
         
-        queryWrapper.select("DISTINCT session_id, session_name, ai_avatar_id")
-                .orderByDesc("MAX(create_time)");
+        queryWrapper.select("DISTINCT sessionId, sessionName, aiAvatarId")
+                .orderByDesc("MAX(createTime)");
         
         List<Map<String, Object>> sessionsList = this.listMaps(queryWrapper);
         
         List<ChatSessionVO> result = new ArrayList<>();
         
         for (Map<String, Object> session : sessionsList) {
-            String sessionId = (String) session.get("session_id");
+            String sessionId = (String) session.get("sessionId");
             if (sessionId == null) {
                 continue;
             }
             
             ChatSessionVO chatSessionVO = new ChatSessionVO();
             chatSessionVO.setSessionId(sessionId);
-            chatSessionVO.setSessionName((String) session.get("session_name"));
+            chatSessionVO.setSessionName((String) session.get("sessionName"));
             
-            Long sessionAiAvatarId = (Long) session.get("ai_avatar_id");
+            Long sessionAiAvatarId = (Long) session.get("aiAvatarId");
             chatSessionVO.setAiAvatarId(sessionAiAvatarId);
             
             // 获取AI分身信息
@@ -126,8 +126,8 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
             
             // 获取会话的最后一条消息
             QueryWrapper<AiAvatarChatHistory> messageQuery = new QueryWrapper<>();
-            messageQuery.eq("session_id", sessionId)
-                    .orderByDesc("create_time")
+            messageQuery.eq("sessionId", sessionId)
+                    .orderByDesc("createTime")
                     .last("LIMIT 1");
             
             AiAvatarChatHistory lastMessage = this.getOne(messageQuery);
@@ -138,7 +138,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
             
             // 获取会话消息数量
             QueryWrapper<AiAvatarChatHistory> countQuery = new QueryWrapper<>();
-            countQuery.eq("session_id", sessionId);
+            countQuery.eq("sessionId", sessionId);
             long count = this.count(countQuery);
             chatSessionVO.setMessageCount((int) count);
             
@@ -155,8 +155,8 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         }
         
         QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("session_id", sessionId)
-                .orderByAsc("create_time");
+        queryWrapper.eq("sessionId", sessionId)
+                .orderByAsc("createTime");
         
         return this.list(queryWrapper);
     }
@@ -168,8 +168,8 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         }
         
         QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("session_id", sessionId)
-                .orderByAsc("create_time");
+        queryWrapper.eq("sessionId", sessionId)
+                .orderByAsc("createTime");
         
         return this.page(new Page<>(current, size), queryWrapper);
     }
@@ -183,7 +183,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         
         // 查询会话中的所有消息，并更新会话名称
         QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("session_id", sessionId);
+        queryWrapper.eq("sessionId", sessionId);
         
         List<AiAvatarChatHistory> chatHistories = this.list(queryWrapper);
         
@@ -208,8 +208,8 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         
         // 验证用户是否有权限删除该会话
         QueryWrapper<AiAvatarChatHistory> authQuery = new QueryWrapper<>();
-        authQuery.eq("session_id", sessionId)
-                .eq("user_id", userId)
+        authQuery.eq("sessionId", sessionId)
+                .eq("userId", userId)
                 .last("LIMIT 1");
         
         AiAvatarChatHistory chatHistory = this.getOne(authQuery);
@@ -220,7 +220,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         
         // 删除会话中的所有消息
         QueryWrapper<AiAvatarChatHistory> deleteQuery = new QueryWrapper<>();
-        deleteQuery.eq("session_id", sessionId);
+        deleteQuery.eq("sessionId", sessionId);
         
         return this.remove(deleteQuery);
     }
@@ -232,15 +232,15 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         }
         
         // 获取用户的最近会话
-        String sql = "SELECT session_id, MAX(create_time) as last_time FROM ai_avatar_chat_history " +
-                "WHERE user_id = " + userId + " GROUP BY session_id ORDER BY last_time DESC LIMIT " + limit;
+        String sql = "SELECT sessionId, MAX(createTime) as last_time FROM ai_avatar_chat_history " +
+                "WHERE userId = " + userId + " GROUP BY sessionId ORDER BY last_time DESC LIMIT " + limit;
         
         // 由于MyBatis-Plus没有直接的方法支持这种查询，这里使用简单的方式
         // 在实际项目中可能需要更复杂的实现
         QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id", userId)
-                .select("DISTINCT session_id")
-                .orderByDesc("create_time")
+        queryWrapper.eq("userId", userId)
+                .select("DISTINCT sessionId")
+                .orderByDesc("createTime")
                 .last("LIMIT " + limit);
         
         List<AiAvatarChatHistory> results = this.list(queryWrapper);
@@ -254,8 +254,8 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         for (String sessionId : sessionIds) {
             // 查询每个会话的详细信息
             QueryWrapper<AiAvatarChatHistory> sessionQuery = new QueryWrapper<>();
-            sessionQuery.eq("session_id", sessionId)
-                    .orderByDesc("create_time")
+            sessionQuery.eq("sessionId", sessionId)
+                    .orderByDesc("createTime")
                     .last("LIMIT 1");
             
             AiAvatarChatHistory lastMessage = this.getOne(sessionQuery);
@@ -277,7 +277,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
                 
                 // 获取会话消息数量
                 QueryWrapper<AiAvatarChatHistory> countQuery = new QueryWrapper<>();
-                countQuery.eq("session_id", sessionId);
+                countQuery.eq("sessionId", sessionId);
                 long count = this.count(countQuery);
                 sessionVO.setMessageCount((int) count);
                 
@@ -339,7 +339,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         
         // 查询会话中的所有消息
         QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("session_id", sessionId);
+        queryWrapper.eq("sessionId", sessionId);
         
         // 更新所有消息的会话名称
         AiAvatarChatHistory updateEntity = new AiAvatarChatHistory();
@@ -357,8 +357,8 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         
         // 验证用户是否有权限删除该会话
         QueryWrapper<AiAvatarChatHistory> authQuery = new QueryWrapper<>();
-        authQuery.eq("session_id", sessionId)
-                .eq("user_id", userId)
+        authQuery.eq("sessionId", sessionId)
+                .eq("userId", userId)
                 .last("LIMIT 1");
         
         AiAvatarChatHistory chatHistory = this.getOne(authQuery);
@@ -391,7 +391,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         
         // 删除本地会话记录
         QueryWrapper<AiAvatarChatHistory> deleteQuery = new QueryWrapper<>();
-        deleteQuery.eq("session_id", sessionId);
+        deleteQuery.eq("sessionId", sessionId);
         
         boolean localDeleted = this.remove(deleteQuery);
         if (!localDeleted) {
