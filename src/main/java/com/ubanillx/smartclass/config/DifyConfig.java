@@ -25,5 +25,10 @@ public class DifyConfig {
     /**
      * 默认User标识前缀
      */
-    private String userPrefix = "smartclass_user_";
+    private String userPrefix = "smartclass_";
+    
+    /**
+     * 是否启用详细的流式日志记录
+     */
+    private boolean enableStreamingVerboseLog = false;
 } 

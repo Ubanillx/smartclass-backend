@@ -115,3 +115,10 @@ knife4j:
 dify:
   chat-messages-path: /chat-messages
   user-prefix: smartclass_user_
+  enable-streaming-verbose-log: false
+
+# 日志配置
+logging:
+  level:
+    com.ubanillx.smartclass.service.impl.DifyServiceImpl: info
+    com.ubanillx.smartclass.controller.AiAvatarChatController: info

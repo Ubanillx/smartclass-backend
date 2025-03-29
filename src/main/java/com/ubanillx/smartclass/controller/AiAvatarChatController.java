@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ubanillx.smartclass.common.BaseResponse;
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.common.ResultUtils;
+import com.ubanillx.smartclass.config.DifyConfig;
 import com.ubanillx.smartclass.model.dto.chat.ChatMessageAddRequest;
 import com.ubanillx.smartclass.model.dto.chat.ChatMessageQueryRequest;
 import com.ubanillx.smartclass.model.dto.chat.ChatSessionQueryRequest;
@@ -61,6 +62,9 @@ public class AiAvatarChatController {
     
     @Resource
     private DifyService difyService;
+    
+    @Resource
+    private DifyConfig difyConfig;
     
     /**
      * 创建新会话
@@ -188,7 +192,8 @@ public class AiAvatarChatController {
      * @return 事件源
      */
     @PostMapping("/message/stream")
-    public SseEmitter sendMessageStream(@RequestBody ChatMessageAddRequest chatMessageAddRequest, HttpServletRequest request) {
+    public SseEmitter sendMessageStream(@RequestBody ChatMessageAddRequest chatMessageAddRequest, 
+                                     HttpServletRequest request) {
         if (chatMessageAddRequest == null || StringUtils.isBlank(chatMessageAddRequest.getContent())) {
             throw new RuntimeException("请求参数错误");
         }
@@ -227,6 +232,23 @@ public class AiAvatarChatController {
                 throw new RuntimeException("AI分身鉴权信息不存在");
             }
             
+            // 在SSE连接建立后立即发送一个初始事件，确保连接稳定
+            try {
+                SseEmitter.SseEventBuilder initialEvent = SseEmitter.event()
+                    .data("{\"event\":\"connected\",\"message\":\"SSE连接已建立\"}")
+                    .id("connect-" + System.currentTimeMillis())
+                    .name("connect");
+                emitter.send(initialEvent);
+            } catch (Exception e) {
+                log.warn("发送初始连接事件失败，客户端可能已断开", e);
+                try {
+                    emitter.complete();
+                } catch (Exception ex) {
+                    log.debug("关闭emitter时出错", ex);
+                }
+                return emitter;
+            }
+            
             // 使用异步处理
             final String finalSessionId = sessionId;
             CompletableFuture.runAsync(() -> {
@@ -243,47 +265,129 @@ public class AiAvatarChatController {
                                 @Override
                                 public void onMessage(String chunk) {
                                     try {
-                                        emitter.send(chunk);
-                                    } catch (IOException e) {
-                                        log.error("Error sending SSE chunk", e);
+                                        // 直接将接收到的每个数据块原样发送给客户端
+                                        // 包装为SSE事件格式
+                                        SseEmitter.SseEventBuilder event = SseEmitter.event()
+                                            .data(chunk)
+                                            .id(String.valueOf(System.currentTimeMillis()))
+                                            .name("message");
+                                        
+                                        log.debug("发送SSE事件到前端，数据长度: {}", chunk.length());
+                                        emitter.send(event);
+                                        log.debug("SSE事件发送成功");
+                                    } catch (Exception e) {
+                                        // 使用debug级别记录，因为客户端断开连接是常见情况
+                                        log.debug("发送SSE数据块失败，客户端可能已断开: {}", e.getMessage());
+                                        // 错误发生时安全地完成emitter
+                                        safeCompleteEmitter(emitter, e);
                                     }
                                 }
                                 
                                 @Override
                                 public void onComplete(String fullResponse) {
                                     try {
-                                        emitter.complete();
+                                        // 发送完成事件
+                                        log.info("流式响应完成，总响应长度: {}", fullResponse.length());
+                                        SseEmitter.SseEventBuilder event = SseEmitter.event()
+                                            .data("{\"event\":\"complete\",\"message\":\"流式响应已完成\"}")
+                                            .id("complete-" + System.currentTimeMillis())
+                                            .name("complete");
+                                        emitter.send(event);
+                                        log.info("已发送完成事件到前端");
+                                        
+                                        // 完成SSE流
+                                        safeCompleteEmitter(emitter, null);
+                                        log.info("SSE连接已安全关闭");
                                     } catch (Exception e) {
-                                        log.error("Error completing SSE emitter", e);
+                                        log.debug("结束SSE流时出错，客户端可能已断开: {}", e.getMessage());
+                                        safeCompleteEmitter(emitter, e);
                                     }
                                 }
                                 
                                 @Override
                                 public void onError(Throwable error) {
                                     try {
-                                        emitter.completeWithError(error);
+                                        // 发送错误事件
+                                        SseEmitter.SseEventBuilder event = SseEmitter.event()
+                                            .data("{\"event\":\"error\",\"message\":\"" + error.getMessage() + "\"}")
+                                            .id("error-" + System.currentTimeMillis())
+                                            .name("error");
+                                        emitter.send(event);
+                                        
+                                        // 以错误结束SSE流
+                                        safeCompleteEmitter(emitter, error);
                                     } catch (Exception e) {
-                                        log.error("Error completing SSE emitter with error", e);
+                                        log.debug("发送错误事件失败，客户端可能已断开: {}", e.getMessage());
+                                        safeCompleteEmitter(emitter, error);
                                     }
                                 }
                             }
                     );
                 } catch (Exception e) {
-                    log.error("Error in streaming chat", e);
+                    log.error("流式聊天过程中出错: {}", e.getMessage());
                     try {
-                        emitter.completeWithError(e);
+                        // 发送错误事件
+                        SseEmitter.SseEventBuilder event = SseEmitter.event()
+                            .data("{\"event\":\"error\",\"message\":\"" + e.getMessage() + "\"}")
+                            .id("error-" + System.currentTimeMillis())
+                            .name("error");
+                        emitter.send(event);
+                        
+                        safeCompleteEmitter(emitter, e);
                     } catch (Exception ex) {
-                        log.error("Error completing SSE emitter with error", ex);
+                        log.debug("发送错误事件失败，客户端可能已断开: {}", ex.getMessage());
+                        safeCompleteEmitter(emitter, e);
                     }
                 }
             });
             
+            // 添加超时和完成时的回调
+            emitter.onTimeout(() -> {
+                log.warn("SSE连接超时");
+                try {
+                    SseEmitter.SseEventBuilder event = SseEmitter.event()
+                        .data("{\"event\":\"timeout\",\"message\":\"连接超时\"}")
+                        .id("timeout-" + System.currentTimeMillis())
+                        .name("timeout");
+                    emitter.send(event);
+                } catch (Exception e) {
+                    log.debug("发送超时事件失败", e);
+                }
+            });
+            
+            emitter.onCompletion(() -> {
+                log.info("SSE连接已完成");
+            });
+            
+            emitter.onError(error -> {
+                log.warn("SSE连接发生错误: {}", error.getMessage());
+            });
+            
+            // 验证这是可以正常工作的
+            log.info("SSE emitter创建成功，流式处理已开始");
+            
         } catch (Exception e) {
-            log.error("Error setting up streaming chat", e);
-            emitter.completeWithError(e);
+            log.error("设置流式聊天时出错: {}", e.getMessage());
+            safeCompleteEmitter(emitter, e);
         }
         
         return emitter;
+    }
+    
+    /**
+     * 安全地完成SseEmitter，避免重复完成导致的异常
+     */
+    private void safeCompleteEmitter(SseEmitter emitter, Throwable error) {
+        try {
+            if (error != null) {
+                emitter.completeWithError(error);
+            } else {
+                emitter.complete();
+            }
+        } catch (Exception e) {
+            // 通常这意味着emitter已经被完成或关闭了
+            log.debug("完成SSE emitter时发生错误，可能已被关闭: {}", e.getMessage());
+        }
     }
     
     /**
@@ -911,6 +1015,23 @@ public class AiAvatarChatController {
                 throw new RuntimeException("AI分身鉴权信息不存在");
             }
             
+            // 在SSE连接建立后立即发送一个初始事件，确保连接稳定
+            try {
+                SseEmitter.SseEventBuilder initialEvent = SseEmitter.event()
+                    .data("{\"event\":\"connected\",\"message\":\"SSE连接已建立\"}")
+                    .id("connect-" + System.currentTimeMillis())
+                    .name("connect");
+                emitter.send(initialEvent);
+            } catch (Exception e) {
+                log.warn("发送初始连接事件失败，客户端可能已断开", e);
+                try {
+                    emitter.complete();
+                } catch (Exception ex) {
+                    log.debug("关闭emitter时出错", ex);
+                }
+                return emitter;
+            }
+            
             // 使用异步处理
             final String finalSessionId = sessionId;
             CompletableFuture.runAsync(() -> {
@@ -928,46 +1049,134 @@ public class AiAvatarChatController {
                                 @Override
                                 public void onMessage(String chunk) {
                                     try {
-                                        emitter.send(chunk);
-                                    } catch (IOException e) {
-                                        log.error("Error sending SSE chunk", e);
+                                        // 直接将接收到的每个数据块原样发送给客户端
+                                        // 包装为SSE事件格式
+                                        SseEmitter.SseEventBuilder event = SseEmitter.event()
+                                            .data(chunk)
+                                            .id(String.valueOf(System.currentTimeMillis()))
+                                            .name("message");
+                                        
+                                        log.debug("发送SSE事件到前端，数据长度: {}", chunk.length());
+                                        emitter.send(event);
+                                        log.debug("SSE事件发送成功");
+                                    } catch (Exception e) {
+                                        // 使用debug级别记录，因为客户端断开连接是常见情况
+                                        log.debug("发送SSE数据块失败，客户端可能已断开: {}", e.getMessage());
+                                        // 错误发生时安全地完成emitter
+                                        safeCompleteEmitter(emitter, e);
                                     }
                                 }
                                 
                                 @Override
                                 public void onComplete(String fullResponse) {
                                     try {
-                                        emitter.complete();
+                                        // 发送完成事件
+                                        log.info("流式响应完成，总响应长度: {}", fullResponse.length());
+                                        SseEmitter.SseEventBuilder event = SseEmitter.event()
+                                            .data("{\"event\":\"complete\",\"message\":\"流式响应已完成\"}")
+                                            .id("complete-" + System.currentTimeMillis())
+                                            .name("complete");
+                                        emitter.send(event);
+                                        log.info("已发送完成事件到前端");
+                                        
+                                        // 完成SSE流
+                                        safeCompleteEmitter(emitter, null);
+                                        log.info("SSE连接已安全关闭");
                                     } catch (Exception e) {
-                                        log.error("Error completing SSE emitter", e);
+                                        log.debug("结束SSE流时出错，客户端可能已断开: {}", e.getMessage());
+                                        safeCompleteEmitter(emitter, e);
                                     }
                                 }
                                 
                                 @Override
                                 public void onError(Throwable error) {
                                     try {
-                                        emitter.completeWithError(error);
+                                        // 发送错误事件
+                                        SseEmitter.SseEventBuilder event = SseEmitter.event()
+                                            .data("{\"event\":\"error\",\"message\":\"" + error.getMessage() + "\"}")
+                                            .id("error-" + System.currentTimeMillis())
+                                            .name("error");
+                                        emitter.send(event);
+                                        
+                                        // 以错误结束SSE流
+                                        safeCompleteEmitter(emitter, error);
                                     } catch (Exception e) {
-                                        log.error("Error completing SSE emitter with error", e);
+                                        log.debug("发送错误事件失败，客户端可能已断开: {}", e.getMessage());
+                                        safeCompleteEmitter(emitter, error);
                                     }
                                 }
                             }
                     );
                 } catch (Exception e) {
-                    log.error("Error in streaming chat with files", e);
+                    log.error("带文件的流式聊天过程中出错: {}", e.getMessage());
                     try {
-                        emitter.completeWithError(e);
+                        // 发送错误事件
+                        SseEmitter.SseEventBuilder event = SseEmitter.event()
+                            .data("{\"event\":\"error\",\"message\":\"" + e.getMessage() + "\"}")
+                            .id("error-" + System.currentTimeMillis())
+                            .name("error");
+                        emitter.send(event);
+                        
+                        safeCompleteEmitter(emitter, e);
                     } catch (Exception ex) {
-                        log.error("Error completing SSE emitter with error", ex);
+                        log.debug("发送错误事件失败，客户端可能已断开: {}", ex.getMessage());
+                        safeCompleteEmitter(emitter, e);
                     }
                 }
             });
             
+            // 添加超时和完成时的回调
+            emitter.onTimeout(() -> {
+                log.warn("SSE连接超时");
+                try {
+                    SseEmitter.SseEventBuilder event = SseEmitter.event()
+                        .data("{\"event\":\"timeout\",\"message\":\"连接超时\"}")
+                        .id("timeout-" + System.currentTimeMillis())
+                        .name("timeout");
+                    emitter.send(event);
+                } catch (Exception e) {
+                    log.debug("发送超时事件失败", e);
+                }
+            });
+            
+            emitter.onCompletion(() -> {
+                log.info("SSE连接已完成");
+            });
+            
+            emitter.onError(error -> {
+                log.warn("SSE连接发生错误: {}", error.getMessage());
+            });
+            
+            log.info("SSE emitter创建成功，带文件的流式处理已开始");
+            
         } catch (Exception e) {
-            log.error("Error setting up streaming chat with files", e);
-            emitter.completeWithError(e);
+            log.error("设置带文件的流式聊天时出错: {}", e.getMessage());
+            safeCompleteEmitter(emitter, e);
         }
         
         return emitter;
+    }
+    
+    /**
+     * 切换流式日志级别
+     * 
+     * @param enable 是否启用详细日志
+     * @param request HTTP请求
+     * @return 当前状态
+     */
+    @PostMapping("/stream/log")
+    public BaseResponse<Boolean> toggleStreamingLog(@RequestParam(defaultValue = "false") boolean enable, 
+                                                 HttpServletRequest request) {
+        // 仅允许管理员切换日志级别
+        User loginUser = userService.getLoginUser(request);
+        if (!userService.isAdmin(loginUser)) {
+            return ResultUtils.error(ErrorCode.NO_AUTH_ERROR, "仅管理员可操作");
+        }
+        
+        // 切换日志级别
+        log.info("切换流式日志级别: {} -> {}", difyConfig.isEnableStreamingVerboseLog(), enable);
+        difyConfig.setEnableStreamingVerboseLog(enable);
+        
+        return ResultUtils.success(difyConfig.isEnableStreamingVerboseLog());
     }
 } 
