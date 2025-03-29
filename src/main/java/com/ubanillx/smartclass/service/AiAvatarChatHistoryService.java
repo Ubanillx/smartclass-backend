@@ -64,6 +64,17 @@ public interface AiAvatarChatHistoryService extends IService<AiAvatarChatHistory
     Page<AiAvatarChatHistory> getSessionHistoryPage(String sessionId, long current, long size);
     
     /**
+     * 分页获取用户的聊天记录
+     *
+     * @param userId 用户ID
+     * @param aiAvatarId AI分身ID (可选)
+     * @param current 当前页
+     * @param size 每页大小
+     * @return 聊天记录分页
+     */
+    Page<AiAvatarChatHistory> getUserHistoryPage(Long userId, Long aiAvatarId, long current, long size);
+    
+    /**
      * 更新会话名称
      *
      * @param sessionId 会话ID
@@ -118,4 +129,14 @@ public interface AiAvatarChatHistoryService extends IService<AiAvatarChatHistory
      * @return 是否更新成功
      */
     boolean updateSessionSummary(String sessionId, String summary);
+    
+    /**
+     * 获取用户的历史对话列表
+     *
+     * @param userId 用户ID
+     * @param limit 限制条数
+     * @param offset 偏移量
+     * @return 历史对话列表
+     */
+    List<ChatSessionVO> getHistoryDialogsList(Long userId, int limit, int offset);
 }

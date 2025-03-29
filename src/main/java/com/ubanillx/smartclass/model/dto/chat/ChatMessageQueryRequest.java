@@ -19,6 +19,11 @@ public class ChatMessageQueryRequest extends PageRequest implements Serializable
     private String sessionId;
     
     /**
+     * AI分身ID (可选)
+     */
+    private Long aiAvatarId;
+    
+    /**
      * 消息类型：user/ai
      */
     private String messageType;

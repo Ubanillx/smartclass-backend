@@ -436,25 +436,12 @@ public class AiAvatarChatController {
      */
     @GetMapping("/history/page")
     public BaseResponse<Page<ChatMessageVO>> getChatHistoryByPage(ChatMessageQueryRequest chatMessageQueryRequest, HttpServletRequest request) {
-        if (chatMessageQueryRequest == null || StringUtils.isBlank(chatMessageQueryRequest.getSessionId())) {
+        if (chatMessageQueryRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
         
         User loginUser = userService.getLoginUser(request);
         String sessionId = chatMessageQueryRequest.getSessionId();
-        
-        // 检查用户是否有权限访问该会话
-        List<AiAvatarChatHistory> checkList = aiAvatarChatHistoryService.getSessionHistory(sessionId);
-        
-        if (checkList.isEmpty()) {
-            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR);
-        }
-        
-        // 验证权限
-        if (!checkList.get(0).getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
-            return ResultUtils.error(ErrorCode.NO_AUTH_ERROR);
-        }
-        
         long current = chatMessageQueryRequest.getCurrent();
         long size = chatMessageQueryRequest.getPageSize();
         
@@ -463,13 +450,47 @@ public class AiAvatarChatController {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
         
-        Page<AiAvatarChatHistory> historyPage = aiAvatarChatHistoryService.getSessionHistoryPage(sessionId, current, size);
+        Page<AiAvatarChatHistory> historyPage;
+        // 当没有指定sessionId时，使用用户ID获取所有历史记录
+        if (StringUtils.isBlank(sessionId)) {
+            Long aiAvatarId = chatMessageQueryRequest.getAiAvatarId();
+            historyPage = aiAvatarChatHistoryService.getUserHistoryPage(loginUser.getId(), aiAvatarId, current, size);
+        } else {
+            // 有sessionId时，检查权限
+            List<AiAvatarChatHistory> checkList = aiAvatarChatHistoryService.getSessionHistory(sessionId);
+            
+            if (checkList.isEmpty()) {
+                return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR);
+            }
+            
+            // 验证权限
+            if (!checkList.get(0).getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
+                return ResultUtils.error(ErrorCode.NO_AUTH_ERROR);
+            }
+            
+            historyPage = aiAvatarChatHistoryService.getSessionHistoryPage(sessionId, current, size);
+        }
         
         // 转换为VO对象
         Page<ChatMessageVO> chatMessageVOPage = new Page<>(current, size, historyPage.getTotal());
         List<ChatMessageVO> chatMessageVOList = historyPage.getRecords().stream().map(history -> {
             ChatMessageVO chatMessageVO = new ChatMessageVO();
             BeanUtils.copyProperties(history, chatMessageVO);
+            
+            // 获取AI分身信息
+            AiAvatar aiAvatar = aiAvatarService.getById(history.getAiAvatarId());
+            if (aiAvatar != null) {
+                chatMessageVO.setAiAvatarName(aiAvatar.getName());
+                chatMessageVO.setAiAvatarImgUrl(aiAvatar.getAvatarImgUrl());
+            }
+            
+            // 获取用户信息
+            User user = userService.getById(history.getUserId());
+            if (user != null) {
+                chatMessageVO.setUserName(user.getUserName());
+                chatMessageVO.setUserAvatar(user.getUserAvatar());
+            }
+            
             return chatMessageVO;
         }).collect(Collectors.toList());
         
@@ -1178,5 +1199,87 @@ public class AiAvatarChatController {
         difyConfig.setEnableStreamingVerboseLog(enable);
         
         return ResultUtils.success(difyConfig.isEnableStreamingVerboseLog());
+    }
+
+    /**
+     * 分页获取用户的聊天历史记录
+     *
+     * @param aiAvatarId AI分身ID (可选)
+     * @param current 当前页
+     * @param pageSize 每页大小
+     * @param request HTTP请求
+     * @return 分页聊天记录
+     */
+    @GetMapping("/user/history")
+    public BaseResponse<Page<ChatMessageVO>> getUserHistoryPage(
+            @RequestParam(required = false) Long aiAvatarId,
+            @RequestParam(defaultValue = "1") long current,
+            @RequestParam(defaultValue = "10") long pageSize,
+            HttpServletRequest request) {
+        
+        // 限制爬虫
+        if (pageSize > 100) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "每页大小不能超过100");
+        }
+        
+        User loginUser = userService.getLoginUser(request);
+        
+        // 获取用户的聊天历史记录
+        Page<AiAvatarChatHistory> historyPage = aiAvatarChatHistoryService.getUserHistoryPage(
+                loginUser.getId(), aiAvatarId, current, pageSize);
+        
+        // 转换为VO对象
+        Page<ChatMessageVO> chatMessageVOPage = new Page<>(current, pageSize, historyPage.getTotal());
+        List<ChatMessageVO> chatMessageVOList = historyPage.getRecords().stream().map(history -> {
+            ChatMessageVO chatMessageVO = new ChatMessageVO();
+            BeanUtils.copyProperties(history, chatMessageVO);
+            
+            // 获取AI分身信息
+            AiAvatar aiAvatar = aiAvatarService.getById(history.getAiAvatarId());
+            if (aiAvatar != null) {
+                chatMessageVO.setAiAvatarName(aiAvatar.getName());
+                chatMessageVO.setAiAvatarImgUrl(aiAvatar.getAvatarImgUrl());
+            }
+            
+            // 获取用户信息
+            User user = userService.getById(history.getUserId());
+            if (user != null) {
+                chatMessageVO.setUserName(user.getUserName());
+                chatMessageVO.setUserAvatar(user.getUserAvatar());
+            }
+            
+            return chatMessageVO;
+        }).collect(Collectors.toList());
+        
+        chatMessageVOPage.setRecords(chatMessageVOList);
+        
+        return ResultUtils.success(chatMessageVOPage);
+    }
+
+    /**
+     * 获取历史对话列表
+     * 
+     * @param limit 限制条数，默认20
+     * @param offset 偏移量，默认0
+     * @param request HTTP请求
+     * @return 历史对话列表
+     */
+    @GetMapping("/history/dialogs")
+    public BaseResponse<List<ChatSessionVO>> getHistoryDialogsList(
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "0") int offset,
+            HttpServletRequest request) {
+        
+        // 限制条数，防止请求过大
+        if (limit > 100) {
+            limit = 100;
+        }
+        
+        User loginUser = userService.getLoginUser(request);
+        
+        List<ChatSessionVO> dialogsList = aiAvatarChatHistoryService.getHistoryDialogsList(
+                loginUser.getId(), limit, offset);
+        
+        return ResultUtils.success(dialogsList);
     }
 } 

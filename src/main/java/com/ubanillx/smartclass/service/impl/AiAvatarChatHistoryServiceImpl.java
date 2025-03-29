@@ -226,28 +226,48 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
     }
     
     @Override
+    public Page<AiAvatarChatHistory> getUserHistoryPage(Long userId, Long aiAvatarId, long current, long size) {
+        if (userId == null) {
+            return new Page<>(current, size);
+        }
+        
+        QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        
+        if (aiAvatarId != null && aiAvatarId > 0) {
+            queryWrapper.eq("aiAvatarId", aiAvatarId);
+        }
+        
+        queryWrapper.orderByDesc("createTime");
+        
+        return this.page(new Page<>(current, size), queryWrapper);
+    }
+    
+    @Override
     public List<ChatSessionVO> getRecentSessions(Long userId, int limit) {
         if (userId == null) {
             return new ArrayList<>();
         }
         
-        // 获取用户的最近会话
-        String sql = "SELECT sessionId, MAX(createTime) as last_time FROM ai_avatar_chat_history " +
-                "WHERE userId = " + userId + " GROUP BY sessionId ORDER BY last_time DESC LIMIT " + limit;
-        
-        // 由于MyBatis-Plus没有直接的方法支持这种查询，这里使用简单的方式
-        // 在实际项目中可能需要更复杂的实现
+        // 修复SQL查询，避免DISTINCT和ORDER BY不兼容的问题
+        // 先获取用户的会话ID列表，然后单独查询每个会话的最后消息
         QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userId", userId)
-                .select("DISTINCT sessionId")
-                .orderByDesc("createTime")
+                .select("MAX(id) as id, sessionId")
+                .groupBy("sessionId")
+                .orderByDesc("MAX(createTime)")
                 .last("LIMIT " + limit);
         
-        List<AiAvatarChatHistory> results = this.list(queryWrapper);
+        List<Map<String, Object>> results = this.listMaps(queryWrapper);
         
         List<String> sessionIds = results.stream()
-                .map(AiAvatarChatHistory::getSessionId)
+                .map(item -> (String) item.get("sessionId"))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+        
+        if (sessionIds.isEmpty()) {
+            return new ArrayList<>();
+        }
         
         List<ChatSessionVO> sessions = new ArrayList<>();
         
@@ -400,5 +420,81 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         }
         
         return true;
+    }
+    
+    @Override
+    public List<ChatSessionVO> getHistoryDialogsList(Long userId, int limit, int offset) {
+        if (userId == null) {
+            return new ArrayList<>();
+        }
+        
+        // 查询用户的会话列表，按最后更新时间降序排序
+        String sql = "SELECT h.sessionId, h.sessionName, h.aiAvatarId, MAX(h.createTime) as lastTime, " +
+                     "COUNT(*) as msgCount " +
+                     "FROM ai_avatar_chat_history h " +
+                     "WHERE h.userId = ? " +
+                     "GROUP BY h.sessionId, h.sessionName, h.aiAvatarId " +
+                     "ORDER BY lastTime DESC " +
+                     "LIMIT ?, ?";
+        
+        // 使用自定义SQL查询
+        try {
+            List<ChatSessionVO> sessionList = new ArrayList<>();
+            
+            // 使用mybatis-plus的自定义SQL查询
+            List<Map<String, Object>> resultMaps = this.baseMapper.selectMaps(
+                    new QueryWrapper<AiAvatarChatHistory>()
+                            .select("sessionId", "MAX(createTime) as lastTime")
+                            .eq("userId", userId)
+                            .groupBy("sessionId")
+                            .orderByDesc("lastTime")
+                            .last("LIMIT " + offset + ", " + limit)
+            );
+            
+            for (Map<String, Object> resultMap : resultMaps) {
+                String sessionId = (String) resultMap.get("sessionId");
+                if (StringUtils.isEmpty(sessionId)) {
+                    continue;
+                }
+                
+                // 查询会话的最后一条消息和详细信息
+                QueryWrapper<AiAvatarChatHistory> lastMessageQuery = new QueryWrapper<>();
+                lastMessageQuery.eq("sessionId", sessionId)
+                        .orderByDesc("createTime")
+                        .last("LIMIT 1");
+                
+                AiAvatarChatHistory lastMessage = this.getOne(lastMessageQuery);
+                if (lastMessage == null) {
+                    continue;
+                }
+                
+                // 查询会话的消息数量
+                long msgCount = this.count(new QueryWrapper<AiAvatarChatHistory>()
+                        .eq("sessionId", sessionId));
+                
+                // 构建会话VO
+                ChatSessionVO sessionVO = new ChatSessionVO();
+                sessionVO.setSessionId(sessionId);
+                sessionVO.setSessionName(lastMessage.getSessionName());
+                sessionVO.setAiAvatarId(lastMessage.getAiAvatarId());
+                sessionVO.setLastMessage(lastMessage.getContent());
+                sessionVO.setLastMessageTime(lastMessage.getCreateTime());
+                sessionVO.setMessageCount((int) msgCount);
+                
+                // 获取AI分身信息
+                AiAvatar aiAvatar = aiAvatarMapper.selectById(lastMessage.getAiAvatarId());
+                if (aiAvatar != null) {
+                    sessionVO.setAiAvatarName(aiAvatar.getName());
+                    sessionVO.setAiAvatarImgUrl(aiAvatar.getAvatarImgUrl());
+                }
+                
+                sessionList.add(sessionVO);
+            }
+            
+            return sessionList;
+        } catch (Exception e) {
+            log.error("获取历史对话列表失败", e);
+            return new ArrayList<>();
+        }
     }
 } 
