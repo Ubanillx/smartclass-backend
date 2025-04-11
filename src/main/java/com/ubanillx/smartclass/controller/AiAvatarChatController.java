@@ -272,9 +272,9 @@ public class AiAvatarChatController {
                                             .id(String.valueOf(System.currentTimeMillis()))
                                             .name("message");
                                         
-                                        log.debug("发送SSE事件到前端，数据长度: {}", chunk.length());
+                                        // 立即发送数据块到前端，不等待累积
                                         emitter.send(event);
-                                        log.debug("SSE事件发送成功");
+                                        log.debug("SSE事件发送成功: 数据长度 {}", chunk.length());
                                     } catch (Exception e) {
                                         // 使用debug级别记录，因为客户端断开连接是常见情况
                                         log.debug("发送SSE数据块失败，客户端可能已断开: {}", e.getMessage());
@@ -1077,9 +1077,9 @@ public class AiAvatarChatController {
                                             .id(String.valueOf(System.currentTimeMillis()))
                                             .name("message");
                                         
-                                        log.debug("发送SSE事件到前端，数据长度: {}", chunk.length());
+                                        // 立即发送数据块到前端，不等待累积
                                         emitter.send(event);
-                                        log.debug("SSE事件发送成功");
+                                        log.debug("SSE事件发送成功: 数据长度 {}", chunk.length());
                                     } catch (Exception e) {
                                         // 使用debug级别记录，因为客户端断开连接是常见情况
                                         log.debug("发送SSE数据块失败，客户端可能已断开: {}", e.getMessage());
