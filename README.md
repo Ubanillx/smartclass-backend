@@ -149,5 +149,4 @@ Dify API集成参考`DifyAPI.md`文件。
 5. 创建Pull Request
 
 ## 许可证
-
-[MIT License](LICENSE)
+本项目仅供个人学习、研究和非商业用途使用。未经授权，不得将本项目用于任何商业目的。
