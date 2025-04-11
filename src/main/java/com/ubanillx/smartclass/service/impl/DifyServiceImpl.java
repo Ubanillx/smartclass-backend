@@ -318,37 +318,43 @@ public class DifyServiceImpl implements DifyService {
                                             } else {
                                                 log.debug("立即转发数据行给回调函数");
                                             }
+                                            // 首先发送给回调，确保前端立即收到
                                             callback.onMessage(jsonData);
 
                                             // 解析数据进行额外处理
-                                            DifyStreamChunk chunk = JSONUtil.toBean(jsonData, DifyStreamChunk.class);
-
-                                            // 处理不同类型的事件
-                                            if ("message".equals(chunk.getEvent()) && chunk.getAnswer() != null) {
-                                                // 累积完整响应
-                                                fullResponseRef.updateAndGet(prev -> prev + chunk.getAnswer());
-                                                log.debug("累积内容: {}", chunk.getAnswer());
-
-                                                // 保存消息ID
-                                                if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
-                                                    messageIdRef.set(chunk.getId());
-                                                    log.info("获取到消息ID: {}", chunk.getId());
+                                            try {
+                                                DifyStreamChunk chunk = JSONUtil.toBean(jsonData, DifyStreamChunk.class);
+    
+                                                // 处理不同类型的事件
+                                                if ("message".equals(chunk.getEvent()) && chunk.getAnswer() != null) {
+                                                    // 累积完整响应
+                                                    fullResponseRef.updateAndGet(prev -> prev + chunk.getAnswer());
+                                                    log.debug("累积内容: {}", chunk.getAnswer());
+    
+                                                    // 保存消息ID
+                                                    if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
+                                                        messageIdRef.set(chunk.getId());
+                                                        log.info("获取到消息ID: {}", chunk.getId());
+                                                    }
+    
+                                                    // 保存会话ID
+                                                    if (chunk.getConversation_id() != null) {
+                                                        conversationIdRef.set(chunk.getConversation_id());
+                                                        log.debug("获取到会话ID: {}", chunk.getConversation_id());
+                                                    }
+                                                } else if ("message_end".equals(chunk.getEvent())) {
+                                                    // 消息结束事件，记录但不做特殊处理
+                                                    log.info("收到消息结束事件: {}", jsonData);
+                                                } else if ("error".equals(chunk.getEvent())) {
+                                                    // 错误事件
+                                                    log.error("收到错误事件: {}", jsonData);
+                                                } else if ("ping".equals(chunk.getEvent())) {
+                                                    // ping事件，用于保持连接活跃
+                                                    log.debug("收到ping事件");
                                                 }
-
-                                                // 保存会话ID
-                                                if (chunk.getConversation_id() != null) {
-                                                    conversationIdRef.set(chunk.getConversation_id());
-                                                    log.debug("获取到会话ID: {}", chunk.getConversation_id());
-                                                }
-                                            } else if ("message_end".equals(chunk.getEvent())) {
-                                                // 消息结束事件，记录但不做特殊处理
-                                                log.info("收到消息结束事件: {}", jsonData);
-                                            } else if ("error".equals(chunk.getEvent())) {
-                                                // 错误事件
-                                                log.error("收到错误事件: {}", jsonData);
-                                            } else if ("ping".equals(chunk.getEvent())) {
-                                                // ping事件，用于保持连接活跃
-                                                log.debug("收到ping事件");
+                                            } catch (Exception e) {
+                                                log.error("解析数据行异常: {}", jsonData, e);
+                                                // 解析异常不影响原始数据传递，已在上面发送过原始数据
                                             }
                                         } catch (Exception e) {
                                             log.error("处理数据行异常: {}", jsonData, e);
@@ -1116,40 +1122,46 @@ public class DifyServiceImpl implements DifyService {
                                             } else {
                                                 log.debug("立即转发数据行给回调函数");
                                             }
+                                            // 首先发送给回调，确保前端立即收到
                                             callback.onMessage(jsonData);
 
                                             // 解析数据进行额外处理
-                                            DifyStreamChunk chunk = JSONUtil.toBean(jsonData, DifyStreamChunk.class);
-
-                                            // 处理不同类型的事件
-                                            if ("message".equals(chunk.getEvent()) && chunk.getAnswer() != null) {
-                                                // 累积完整响应
-                                                fullResponseRef.updateAndGet(prev -> prev + chunk.getAnswer());
-                                                log.debug("累积内容: {}", chunk.getAnswer());
-
-                                                // 保存消息ID
-                                                if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
-                                                    messageIdRef.set(chunk.getId());
-                                                    log.info("获取到消息ID: {}", chunk.getId());
+                                            try {
+                                                DifyStreamChunk chunk = JSONUtil.toBean(jsonData, DifyStreamChunk.class);
+    
+                                                // 处理不同类型的事件
+                                                if ("message".equals(chunk.getEvent()) && chunk.getAnswer() != null) {
+                                                    // 累积完整响应
+                                                    fullResponseRef.updateAndGet(prev -> prev + chunk.getAnswer());
+                                                    log.debug("累积内容: {}", chunk.getAnswer());
+    
+                                                    // 保存消息ID
+                                                    if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
+                                                        messageIdRef.set(chunk.getId());
+                                                        log.info("获取到消息ID: {}", chunk.getId());
+                                                    }
+    
+                                                    // 保存会话ID
+                                                    if (chunk.getConversation_id() != null) {
+                                                        conversationIdRef.set(chunk.getConversation_id());
+                                                        log.debug("获取到会话ID: {}", chunk.getConversation_id());
+                                                    }
+                                                } else if ("message_file".equals(chunk.getEvent())) {
+                                                    // 文件消息事件，记录但由回调处理具体逻辑
+                                                    log.debug("收到文件消息事件: {}", jsonData);
+                                                } else if ("message_end".equals(chunk.getEvent())) {
+                                                    // 消息结束事件，记录但不做特殊处理
+                                                    log.info("收到消息结束事件: {}", jsonData);
+                                                } else if ("error".equals(chunk.getEvent())) {
+                                                    // 错误事件
+                                                    log.error("收到错误事件: {}", jsonData);
+                                                } else if ("ping".equals(chunk.getEvent())) {
+                                                    // ping事件，用于保持连接活跃
+                                                    log.debug("收到ping事件");
                                                 }
-
-                                                // 保存会话ID
-                                                if (chunk.getConversation_id() != null) {
-                                                    conversationIdRef.set(chunk.getConversation_id());
-                                                    log.debug("获取到会话ID: {}", chunk.getConversation_id());
-                                                }
-                                            } else if ("message_file".equals(chunk.getEvent())) {
-                                                // 文件消息事件，记录但由回调处理具体逻辑
-                                                log.debug("收到文件消息事件: {}", jsonData);
-                                            } else if ("message_end".equals(chunk.getEvent())) {
-                                                // 消息结束事件，记录但不做特殊处理
-                                                log.info("收到消息结束事件: {}", jsonData);
-                                            } else if ("error".equals(chunk.getEvent())) {
-                                                // 错误事件
-                                                log.error("收到错误事件: {}", jsonData);
-                                            } else if ("ping".equals(chunk.getEvent())) {
-                                                // ping事件，用于保持连接活跃
-                                                log.debug("收到ping事件");
+                                            } catch (Exception e) {
+                                                log.error("解析数据行异常: {}", jsonData, e);
+                                                // 解析异常不影响原始数据传递，已在上面发送过原始数据
                                             }
                                         } catch (Exception e) {
                                             log.error("处理数据行异常: {}", jsonData, e);
