@@ -118,26 +118,26 @@ public class UserController {
         return ResultUtils.success(loginUserVO);
     }
 
-        /**
-         * 用户手机登录
-         *
-         * @param userLoginByPhoneRequest
-         * @param request
-         * @return
-         */
-        @PostMapping("/login/phone")
-        public BaseResponse<LoginUserVO> userLoginByPhone(@RequestBody UserLoginByPhoneRequest userLoginByPhoneRequest, HttpServletRequest request) {
-            if (userLoginByPhoneRequest == null) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR);
-            }
-            String userPhone = userLoginByPhoneRequest.getUserPhone();
-            String userPassword = userLoginByPhoneRequest.getUserPassword();
-            if (StringUtils.isAnyBlank(userPhone, userPassword)) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR);
-            }
-            LoginUserVO loginUserVO = userService.userLogin(userPhone, userPassword, request);
-            return ResultUtils.success(loginUserVO);
+    /**
+     * 用户手机登录
+     *
+     * @param userLoginByPhoneRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/login/phone")
+    public BaseResponse<LoginUserVO> userLoginByPhone(@RequestBody UserLoginByPhoneRequest userLoginByPhoneRequest, HttpServletRequest request) {
+        if (userLoginByPhoneRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        String userPhone = userLoginByPhoneRequest.getUserPhone();
+        String userPassword = userLoginByPhoneRequest.getUserPassword();
+        if (StringUtils.isAnyBlank(userPhone, userPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        LoginUserVO loginUserVO = userService.userLoginByPhone(userPhone, userPassword, request);
+        return ResultUtils.success(loginUserVO);
+    }
 
     /**
      * 用户登录（微信开放平台）
