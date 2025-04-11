@@ -36,6 +36,16 @@ public interface UserService extends IService<User> {
     LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
     /**
+     * 用户手机号登录
+     *
+     * @param userPhone  用户手机号
+     * @param userPassword 用户密码
+     * @param request
+     * @return 脱敏后的用户信息
+     */
+    LoginUserVO userLoginByPhone(String userPhone, String userPassword, HttpServletRequest request);
+
+    /**
      * 用户登录（微信开放平台）
      *
      * @param wxOAuth2UserInfo 从微信获取的用户信息
