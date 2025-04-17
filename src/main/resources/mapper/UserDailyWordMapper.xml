@@ -34,7 +34,7 @@
         join user_daily_word udw on w.id = udw.wordId
         where udw.userId = #{favourUserId}
         and udw.isCollected = 1
-        and w.is_delete = 0
+        and w.isDelete = 0
         ${ew.customSqlSegment}
     </select>
     
@@ -45,7 +45,7 @@
         join user_daily_word udw on w.id = udw.wordId
         where udw.userId = #{thumbUserId}
         and udw.isLiked = 1
-        and w.is_delete = 0
+        and w.isDelete = 0
         ${ew.customSqlSegment}
     </select>
 </mapper>

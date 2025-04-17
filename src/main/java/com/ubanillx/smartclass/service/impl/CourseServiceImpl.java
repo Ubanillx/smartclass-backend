@@ -258,7 +258,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
         if (ObjectUtils.isNotEmpty(maxPrice)) {
             queryWrapper.le("price", maxPrice);
         }
-        queryWrapper.eq("is_delete", 0);
+        queryWrapper.eq("isDelete", 0);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), 
                 sortField);
         return queryWrapper;
@@ -314,7 +314,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
         QueryWrapper<Course> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("teacher_id", teacherId);
         queryWrapper.eq("status", 1); // 只查询已发布的课程
-        queryWrapper.eq("is_delete", 0);
+        queryWrapper.eq("isDelete", 0);
         queryWrapper.orderByDesc("create_time");
         
         List<Course> courseList = this.list(queryWrapper);
@@ -325,7 +325,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
     public List<CourseVO> getRecommendCourses(Long categoryId, Integer difficulty, int limit, User currentUser) {
         QueryWrapper<Course> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("status", 1); // 只查询已发布的课程
-        queryWrapper.eq("is_delete", 0);
+        queryWrapper.eq("isDelete", 0);
         
         if (categoryId != null) {
             queryWrapper.eq("category_id", categoryId);

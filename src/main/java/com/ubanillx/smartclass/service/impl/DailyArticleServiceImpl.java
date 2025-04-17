@@ -136,7 +136,7 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
         queryWrapper.le(maxReadTime != null, "read_time", maxReadTime);
         queryWrapper.ge(minViewCount != null, "view_count", minViewCount);
         queryWrapper.eq(createTime != null, "create_time", createTime);
-        queryWrapper.eq("is_delete", 0);
+        queryWrapper.eq("isDelete", 0);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), 
                 sortOrder.equals(CommonConstant.SORT_ORDER_ASC), 
                 sortField);
@@ -180,7 +180,7 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
     @Override
     public List<DailyArticleVO> getRecommendArticles(String category, Integer difficulty, int limit) {
         QueryWrapper<DailyArticle> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("is_delete", 0);
+        queryWrapper.eq("isDelete", 0);
         if (StringUtils.isNotBlank(category)) {
             queryWrapper.eq("category", category);
         }

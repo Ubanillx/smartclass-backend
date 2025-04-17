@@ -116,7 +116,7 @@ public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord
         queryWrapper.le(publishDateEnd != null, "publish_date", publishDateEnd);
         queryWrapper.eq(adminId != null, "admin_id", adminId);
         queryWrapper.eq(createTime != null, "create_time", createTime);
-        queryWrapper.eq("is_delete", 0);
+        queryWrapper.eq("isDelete", 0);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), 
                 sortOrder.equals(CommonConstant.SORT_ORDER_ASC), 
                 sortField);
@@ -129,7 +129,7 @@ public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord
         if (difficulty != null) {
             queryWrapper.eq("difficulty", difficulty);
         }
-        queryWrapper.eq("is_delete", 0);
+        queryWrapper.eq("isDelete", 0);
         queryWrapper.orderByAsc("RAND()");
         queryWrapper.last("LIMIT 1");
         DailyWord dailyWord = this.getOne(queryWrapper);

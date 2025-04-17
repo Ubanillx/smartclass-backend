@@ -33,7 +33,7 @@
         join user_daily_article uda on a.id = uda.articleId
         where uda.userId = #{favourUserId}
         and uda.isCollected = 1
-        and a.is_delete = 0
+        and a.isDelete = 0
         ${ew.customSqlSegment}
     </select>
     
@@ -44,7 +44,7 @@
         join user_daily_article uda on a.id = uda.articleId
         where uda.userId = #{thumbUserId}
         and uda.isLiked = 1
-        and a.is_delete = 0
+        and a.isDelete = 0
         ${ew.customSqlSegment}
     </select>
 </mapper>
