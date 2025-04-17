@@ -678,6 +678,7 @@ create table if not exists daily_word
     exampleTranslation text                               null comment '例句翻译',
     difficulty         tinyint  default 1                 not null comment '难度等级：1-简单，2-中等，3-困难',
     category           varchar(64)                        null comment '单词分类',
+    likeCount          int DEFAULT 0                      not null comment '点赞次数' after adminId;
     notes              text                               null comment '单词笔记或补充说明',
     publishDate        date                               not null comment '发布日期',
     adminId            bigint                             not null comment '创建管理员id',
