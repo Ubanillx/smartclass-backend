@@ -66,7 +66,7 @@ public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord
         String dateString = sdf.format(date);
         QueryWrapper<DailyWord> queryWrapper = new QueryWrapper<>();
         // 转换为日期字符串进行比较，忽略时分秒
-        queryWrapper.apply("DATE_FORMAT(publish_date, '%Y-%m-%d') = {0}", dateString);
+        queryWrapper.apply("DATE_FORMAT(publishDate, '%Y-%m-%d') = {0}", dateString);
         List<DailyWord> dailyWordList = this.list(queryWrapper);
         return this.getDailyWordVO(dailyWordList);
     }
@@ -112,10 +112,10 @@ public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord
         queryWrapper.like(StringUtils.isNotBlank(translation), "translation", translation);
         queryWrapper.eq(difficulty != null, "difficulty", difficulty);
         queryWrapper.eq(StringUtils.isNotBlank(category), "category", category);
-        queryWrapper.ge(publishDateStart != null, "publish_date", publishDateStart);
-        queryWrapper.le(publishDateEnd != null, "publish_date", publishDateEnd);
-        queryWrapper.eq(adminId != null, "admin_id", adminId);
-        queryWrapper.eq(createTime != null, "create_time", createTime);
+        queryWrapper.ge(publishDateStart != null, "publishDate", publishDateStart);
+        queryWrapper.le(publishDateEnd != null, "publishDate", publishDateEnd);
+        queryWrapper.eq(adminId != null, "adminId", adminId);
+        queryWrapper.eq(createTime != null, "createTime", createTime);
         queryWrapper.eq("isDelete", 0);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), 
                 sortOrder.equals(CommonConstant.SORT_ORDER_ASC), 

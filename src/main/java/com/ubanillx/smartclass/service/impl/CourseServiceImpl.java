@@ -243,12 +243,12 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
             queryWrapper.like("title", title);
         }
         queryWrapper.eq(ObjectUtils.isNotEmpty(id), "id", id);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(courseType), "course_type", courseType);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(courseType), "courseType", courseType);
         queryWrapper.eq(ObjectUtils.isNotEmpty(difficulty), "difficulty", difficulty);
         queryWrapper.eq(ObjectUtils.isNotEmpty(status), "status", status);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(categoryId), "category_id", categoryId);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(teacherId), "teacher_id", teacherId);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "user_id", userId);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(categoryId), "categoryId", categoryId);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(teacherId), "teacherId", teacherId);
+        queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
         if (StringUtils.isNotBlank(tags)) {
             queryWrapper.like("tags", tags);
         }
@@ -300,7 +300,7 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
         
         UpdateWrapper<Course> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id);
-        updateWrapper.setSql("student_count = student_count + 1");
+        updateWrapper.setSql("studentCount = studentCount + 1");
         
         return this.update(updateWrapper);
     }
@@ -312,10 +312,10 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
         }
         
         QueryWrapper<Course> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("teacher_id", teacherId);
+        queryWrapper.eq("teacherId", teacherId);
         queryWrapper.eq("status", 1); // 只查询已发布的课程
         queryWrapper.eq("isDelete", 0);
-        queryWrapper.orderByDesc("create_time");
+        queryWrapper.orderByDesc("createTime");
         
         List<Course> courseList = this.list(queryWrapper);
         return this.getCourseVO(courseList, currentUser);
@@ -328,14 +328,14 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course>
         queryWrapper.eq("isDelete", 0);
         
         if (categoryId != null) {
-            queryWrapper.eq("category_id", categoryId);
+            queryWrapper.eq("categoryId", categoryId);
         }
         if (difficulty != null) {
             queryWrapper.eq("difficulty", difficulty);
         }
         
         // 按照评分、学习人数排序，获取热门课程
-        queryWrapper.orderByDesc("rating_score", "student_count");
+        queryWrapper.orderByDesc("ratingScore", "studentCount");
         queryWrapper.last("LIMIT " + limit);
         
         List<Course> courseList = this.list(queryWrapper);

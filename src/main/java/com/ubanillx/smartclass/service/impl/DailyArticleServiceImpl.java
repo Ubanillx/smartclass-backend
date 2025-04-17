@@ -74,7 +74,7 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
         String dateString = sdf.format(date);
         QueryWrapper<DailyArticle> queryWrapper = new QueryWrapper<>();
         // 转换为日期字符串进行比较，忽略时分秒
-        queryWrapper.apply("DATE_FORMAT(publish_date, '%Y-%m-%d') = {0}", dateString);
+        queryWrapper.apply("DATE_FORMAT(publishDate, '%Y-%m-%d') = {0}", dateString);
         List<DailyArticle> dailyArticleList = this.list(queryWrapper);
         return this.getDailyArticleVO(dailyArticleList);
     }
@@ -129,13 +129,13 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
         queryWrapper.eq(StringUtils.isNotBlank(category), "category", category);
         queryWrapper.like(StringUtils.isNotBlank(tags), "tags", tags);
         queryWrapper.eq(difficulty != null, "difficulty", difficulty);
-        queryWrapper.ge(publishDateStart != null, "publish_date", publishDateStart);
-        queryWrapper.le(publishDateEnd != null, "publish_date", publishDateEnd);
-        queryWrapper.eq(adminId != null, "admin_id", adminId);
-        queryWrapper.ge(minReadTime != null, "read_time", minReadTime);
-        queryWrapper.le(maxReadTime != null, "read_time", maxReadTime);
-        queryWrapper.ge(minViewCount != null, "view_count", minViewCount);
-        queryWrapper.eq(createTime != null, "create_time", createTime);
+        queryWrapper.ge(publishDateStart != null, "publishDate", publishDateStart);
+        queryWrapper.le(publishDateEnd != null, "publishDate", publishDateEnd);
+        queryWrapper.eq(adminId != null, "adminId", adminId);
+        queryWrapper.ge(minReadTime != null, "readTime", minReadTime);
+        queryWrapper.le(maxReadTime != null, "readTime", maxReadTime);
+        queryWrapper.ge(minViewCount != null, "viewCount", minViewCount);
+        queryWrapper.eq(createTime != null, "createTime", createTime);
         queryWrapper.eq("isDelete", 0);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), 
                 sortOrder.equals(CommonConstant.SORT_ORDER_ASC), 
@@ -150,7 +150,7 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
         }
         UpdateWrapper<DailyArticle> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id);
-        updateWrapper.setSql("view_count = view_count + 1");
+        updateWrapper.setSql("viewCount = viewCount + 1");
         return this.update(updateWrapper);
     }
 
@@ -161,7 +161,7 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
         }
         UpdateWrapper<DailyArticle> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id);
-        updateWrapper.setSql("like_count = like_count + 1");
+        updateWrapper.setSql("likeCount = likeCount + 1");
         return this.update(updateWrapper);
     }
     
@@ -173,7 +173,7 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
         UpdateWrapper<DailyArticle> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id);
         // 确保点赞数不会小于0
-        updateWrapper.setSql("like_count = GREATEST(like_count - 1, 0)");
+        updateWrapper.setSql("likeCount = GREATEST(likeCount - 1, 0)");
         return this.update(updateWrapper);
     }
 
@@ -188,7 +188,7 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
             queryWrapper.eq("difficulty", difficulty);
         }
         // 按照查看次数和点赞次数排序，获取热门文章
-        queryWrapper.orderByDesc("view_count", "like_count");
+        queryWrapper.orderByDesc("viewCount", "likeCount");
         queryWrapper.last("LIMIT " + limit);
         List<DailyArticle> dailyArticleList = this.list(queryWrapper);
         return this.getDailyArticleVO(dailyArticleList);
