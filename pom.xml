@@ -10,7 +10,7 @@
         <version>2.7.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.yupi</groupId>
+    <groupId>com.ubanillx</groupId>
     <artifactId>smartclass-ubanillx</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>smartclass-ubanillx</name>
