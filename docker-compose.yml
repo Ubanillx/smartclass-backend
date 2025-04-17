@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # 应用服务
+  smartclass-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartclass-app
+    ports:
+      - "8101:8101"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/smart_class?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=mysql_5TDxKc
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=redis_wKaQkb
+      - SPRING_PROFILES_ACTIVE=prod
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - smartclass-network
+    restart: always
+
+  # MySQL服务
+  mysql:
+    image: mysql:8.0
+    container_name: smartclass-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql_5TDxKc
+      - MYSQL_DATABASE=smart_class
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    networks:
+      - smartclass-network
+    restart: always
+
+  # Redis服务
+  redis:
+    image: redis:6.2
+    container_name: smartclass-redis
+    command: redis-server --requirepass redis_wKaQkb
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - smartclass-network
+    restart: always
+
+# 数据卷
+volumes:
+  mysql-data:
+  redis-data:
+
+# 网络配置
+networks:
+  smartclass-network:
+    driver: bridge 
