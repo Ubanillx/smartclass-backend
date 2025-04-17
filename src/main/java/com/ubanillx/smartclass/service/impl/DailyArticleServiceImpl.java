@@ -193,6 +193,28 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
         List<DailyArticle> dailyArticleList = this.list(queryWrapper);
         return this.getDailyArticleVO(dailyArticleList);
     }
+    
+    @Override
+    public DailyArticleVO getRandomLatestArticle() {
+        // 查询最新的10篇文章
+        QueryWrapper<DailyArticle> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("isDelete", 0);
+        queryWrapper.orderByDesc("publishDate", "createTime");
+        queryWrapper.last("LIMIT 10");
+        List<DailyArticle> latestArticles = this.list(queryWrapper);
+        
+        // 如果没有文章，返回null
+        if (CollUtil.isEmpty(latestArticles)) {
+            return null;
+        }
+        
+        // 从最新文章中随机选择一篇
+        int randomIndex = (int) (Math.random() * latestArticles.size());
+        DailyArticle randomArticle = latestArticles.get(randomIndex);
+        
+        // 返回文章视图对象
+        return this.getDailyArticleVO(randomArticle);
+    }
 }
 
 

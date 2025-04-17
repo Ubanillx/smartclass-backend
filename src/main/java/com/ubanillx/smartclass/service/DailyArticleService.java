@@ -91,4 +91,11 @@ public interface DailyArticleService extends IService<DailyArticle> {
      */
     List<DailyArticleVO> getRecommendArticles(String category, Integer difficulty, int limit);
 
+    /**
+     * 随机获取一篇最新的文章
+     *
+     * @return 随机选择的最新文章
+     */
+    DailyArticleVO getRandomLatestArticle();
+
 }

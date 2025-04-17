@@ -196,12 +196,17 @@ public class DailyArticleController {
     /**
      * 获取今日文章
      *
-     * @return
+     * @return 随机返回一篇最新的文章
      */
     @GetMapping("/today")
-    public BaseResponse<List<DailyArticleVO>> getTodayArticle() {
-        List<DailyArticleVO> dailyArticleVOList = dailyArticleService.getDailyArticleByDate(new Date());
-        return ResultUtils.success(dailyArticleVOList);
+    public BaseResponse<DailyArticleVO> getTodayArticle() {
+        DailyArticleVO randomLatestArticle = dailyArticleService.getRandomLatestArticle();
+        if (randomLatestArticle == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到文章");
+        }
+        // 增加文章查看次数
+        dailyArticleService.increaseViewCount(randomLatestArticle.getId());
+        return ResultUtils.success(randomLatestArticle);
     }
 
     /**
