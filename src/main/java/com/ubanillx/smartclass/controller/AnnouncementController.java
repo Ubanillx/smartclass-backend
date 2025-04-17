@@ -126,21 +126,27 @@ public class AnnouncementController {
         if (announcement == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
-        // 增加公告查看次数
-        announcementService.increaseViewCount(id);
+        
         // 获取封装
         AnnouncementVO announcementVO = announcementService.getAnnouncementVO(announcement);
+        
         // 获取登录用户
         User loginUser = userService.getLoginUser(request);
         // 如果用户已登录，查询是否已读
         if (loginUser != null) {
             boolean hasRead = announcementService.hasReadAnnouncement(id, loginUser.getId());
             announcementVO.setHasRead(hasRead);
-            // 如果未读，标记为已读
+            
+            // 如果未读，增加公告查看次数并标记为已读
             if (!hasRead) {
+                announcementService.increaseViewCount(id);
                 announcementService.readAnnouncement(id, loginUser.getId());
             }
+        } else {
+            // 未登录用户增加查看次数
+            announcementService.increaseViewCount(id);
         }
+        
         return ResultUtils.success(announcementVO);
     }
 
@@ -249,6 +255,14 @@ public class AnnouncementController {
         }
         // 获取登录用户
         User loginUser = userService.getLoginUser(request);
+        // 判断是否已读
+        boolean hasRead = announcementService.hasReadAnnouncement(id, loginUser.getId());
+        
+        // 如果未读，则增加查看次数
+        if (!hasRead) {
+            announcementService.increaseViewCount(id);
+        }
+        
         // 标记为已读
         boolean result = announcementService.readAnnouncement(id, loginUser.getId());
         return ResultUtils.success(result);
