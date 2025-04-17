@@ -66,6 +66,11 @@ public class DailyWordVO implements Serializable {
     private Date publishDate;
 
     /**
+     * 点赞次数
+     */
+    private Integer likeCount;
+
+    /**
      * 创建时间
      */
     private Date createTime;

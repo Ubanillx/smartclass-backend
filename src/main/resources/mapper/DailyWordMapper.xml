@@ -17,6 +17,7 @@
             <result property="notes" column="notes" />
             <result property="publishDate" column="publishDate" />
             <result property="adminId" column="adminId" />
+            <result property="likeCount" column="likeCount" />
             <result property="createTime" column="createTime" />
             <result property="updateTime" column="updateTime" />
             <result property="isDelete" column="isDelete" />
@@ -25,6 +26,6 @@
     <sql id="Base_Column_List">
         id,word,pronunciation,audioUrl,translation,example,
         exampleTranslation,difficulty,category,notes,publishDate,
-        adminId,createTime,updateTime,isDelete
+        adminId,likeCount,createTime,updateTime,isDelete
     </sql>
 </mapper>

@@ -77,6 +77,11 @@ public class DailyWord implements Serializable {
     private Long adminId;
 
     /**
+     * 点赞次数
+     */
+    private Integer likeCount;
+
+    /**
      * 创建时间
      */
     private Date createTime;

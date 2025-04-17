@@ -194,12 +194,15 @@ public class DailyWordController {
     /**
      * 获取今日单词
      *
-     * @return
+     * @return 随机返回一个最新的单词
      */
     @GetMapping("/today")
-    public BaseResponse<List<DailyWordVO>> getTodayWord() {
-        List<DailyWordVO> dailyWordVOList = dailyWordService.getDailyWordByDate(new Date());
-        return ResultUtils.success(dailyWordVOList);
+    public BaseResponse<DailyWordVO> getTodayWord() {
+        DailyWordVO randomLatestWord = dailyWordService.getRandomLatestWord();
+        if (randomLatestWord == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到单词");
+        }
+        return ResultUtils.success(randomLatestWord);
     }
 
     /**

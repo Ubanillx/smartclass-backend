@@ -80,4 +80,11 @@ public interface DailyWordService extends IService<DailyWord> {
      * @return
      */
     boolean decreaseLikeCount(Long id);
+    
+    /**
+     * 随机获取一个最新的单词
+     *
+     * @return 随机选择的最新单词
+     */
+    DailyWordVO getRandomLatestWord();
 }

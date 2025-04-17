@@ -143,7 +143,7 @@ public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord
         }
         UpdateWrapper<DailyWord> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id);
-        updateWrapper.setSql("like_count = like_count + 1");
+        updateWrapper.setSql("likeCount = likeCount + 1");
         return this.update(updateWrapper);
     }
     
@@ -155,8 +155,30 @@ public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord
         UpdateWrapper<DailyWord> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id);
         // 确保点赞数不会小于0
-        updateWrapper.setSql("like_count = GREATEST(like_count - 1, 0)");
+        updateWrapper.setSql("likeCount = GREATEST(likeCount - 1, 0)");
         return this.update(updateWrapper);
+    }
+    
+    @Override
+    public DailyWordVO getRandomLatestWord() {
+        // 查询最新的10个单词
+        QueryWrapper<DailyWord> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("isDelete", 0);
+        queryWrapper.orderByDesc("publishDate", "createTime");
+        queryWrapper.last("LIMIT 10");
+        List<DailyWord> latestWords = this.list(queryWrapper);
+        
+        // 如果没有单词，返回null
+        if (CollUtil.isEmpty(latestWords)) {
+            return null;
+        }
+        
+        // 从最新单词中随机选择一个
+        int randomIndex = (int) (Math.random() * latestWords.size());
+        DailyWord randomWord = latestWords.get(randomIndex);
+        
+        // 返回单词视图对象
+        return this.getDailyWordVO(randomWord);
     }
 }
 
