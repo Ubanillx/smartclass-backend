@@ -31,7 +31,7 @@ WORKDIR /app
 COPY --from=builder /app/target/smartclass-ubanillx-0.0.1-SNAPSHOT.jar /app/app.jar
 
 # 暴露应用端口
-EXPOSE 8081
+EXPOSE 8101
 
 # 将应用所有权授予非 root 用户
 RUN chown -R smartclass:smartclass /app
