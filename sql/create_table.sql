@@ -836,3 +836,23 @@ create table if not exists user_feedback
     index idx_userId (userId),
     index idx_status (status)
 ) comment '用户反馈' collate = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_word_book
+(
+    id             BIGINT AUTO_INCREMENT COMMENT 'id' PRIMARY KEY,
+    userId         BIGINT                             NOT NULL COMMENT '用户id，关联到user表',
+    wordId         BIGINT                             NOT NULL COMMENT '单词id，关联到daily_word表',
+    learningStatus TINYINT  DEFAULT 0                 NOT NULL COMMENT '学习状态：0-未学习，1-已学习，2-已掌握',
+    isCollected    TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否收藏：0-否，1-是',
+    collectedTime  DATETIME                           NULL COMMENT '收藏时间',
+    difficulty     TINYINT  DEFAULT 1                 NOT NULL COMMENT '难度等级：1-简单，2-中等，3-困难',
+    isDeleted      TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    createTime     DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime     DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_userId (userId),
+    INDEX idx_wordId (wordId),
+    INDEX idx_learningStatus (learningStatus),
+    INDEX idx_isCollected (isCollected),
+    INDEX idx_difficulty (difficulty),
+    UNIQUE uk_user_word (userId, wordId)
+) COMMENT '用户生词本' COLLATE = utf8mb4_unicode_ci;
