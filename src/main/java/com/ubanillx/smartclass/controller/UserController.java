@@ -92,7 +92,7 @@ public class UserController {
         if (StringUtils.isAnyBlank(userPhone, userPassword, checkPassword)) {
             return null;
         }
-        long result = userService.userRegister(userPhone, userPassword, checkPassword);
+        long result = userService.userRegisterByPhone(userPhone, userPassword, checkPassword);
         return ResultUtils.success(result);
     }
 
@@ -256,18 +256,26 @@ public class UserController {
     }
 
     /**
-     * 根据 id 获取用户（仅管理员）
+     * 根据 id 获取用户（管理员可查看任何用户，普通用户只能查看自己）
      *
      * @param id
      * @param request
      * @return
      */
     @GetMapping("/get")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<User> getUserById(long id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        
+        // 获取当前登录用户
+        User loginUser = userService.getLoginUser(request);
+        
+        // 如果不是管理员，则只能查看自己的信息
+        if (!userService.isAdmin(loginUser) && !loginUser.getId().equals(id)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限查看其他用户信息");
+        }
+        
         User user = userService.getById(id);
         ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
         return ResultUtils.success(user);

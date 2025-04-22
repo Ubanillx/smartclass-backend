@@ -26,6 +26,16 @@ public interface UserService extends IService<User> {
     long userRegister(String userAccount, String userPassword, String checkPassword);
 
     /**
+     * 用户手机号注册
+     *
+     * @param userPhone     用户手机号
+     * @param userPassword  用户密码
+     * @param checkPassword 校验密码
+     * @return 新用户 id
+     */
+    long userRegisterByPhone(String userPhone, String userPassword, String checkPassword);
+
+    /**
      * 用户登录
      *
      * @param userAccount  用户账户

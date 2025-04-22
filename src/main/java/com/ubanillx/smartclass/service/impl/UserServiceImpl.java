@@ -78,6 +78,80 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public long userRegisterByPhone(String userPhone, String userPassword, String checkPassword) {
+        // 1. 校验
+        if (StringUtils.isAnyBlank(userPhone, userPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (!userPhone.matches("^1[3-9]\\d{9}$")) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号格式错误");
+        }
+        if (userPassword.length() < 8 || checkPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
+        }
+        // 密码和校验密码相同
+        if (!userPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
+        }
+        
+        synchronized (userPhone.intern()) {
+            // 手机号不能重复
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("userPhone", userPhone);
+            long count = this.baseMapper.selectCount(queryWrapper);
+            if (count > 0) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "该手机号已被注册");
+            }
+            
+            // 随机生成10位字符串作为账号
+            String userAccount = generateRandomAccount(10);
+            
+            // 账户不能重复
+            QueryWrapper<User> accountQueryWrapper = new QueryWrapper<>();
+            accountQueryWrapper.eq("userAccount", userAccount);
+            long accountCount = this.baseMapper.selectCount(accountQueryWrapper);
+            
+            // 如果账号已存在，重新生成直到找到未使用的账号
+            while (accountCount > 0) {
+                userAccount = generateRandomAccount(10);
+                accountQueryWrapper = new QueryWrapper<>();
+                accountQueryWrapper.eq("userAccount", userAccount);
+                accountCount = this.baseMapper.selectCount(accountQueryWrapper);
+            }
+            
+            // 2. 加密
+            String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+            
+            // 3. 插入数据
+            User user = new User();
+            user.setUserAccount(userAccount);
+            user.setUserPhone(userPhone);
+            user.setUserPassword(encryptPassword);
+            boolean saveResult = this.save(user);
+            if (!saveResult) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
+            }
+            return user.getId();
+        }
+    }
+    
+    /**
+     * 生成指定长度的随机字符串作为账号
+     * 
+     * @param length 账号长度
+     * @return 随机生成的账号
+     */
+    private String generateRandomAccount(int length) {
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            int index = (int) (Math.random() * characters.length());
+            sb.append(characters.charAt(index));
+        }
+        return sb.toString();
+    }
+
+    @Override
     public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
