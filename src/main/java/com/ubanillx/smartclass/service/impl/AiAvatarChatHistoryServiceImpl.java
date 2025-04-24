@@ -51,6 +51,12 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
             return false;
         }
         
+        // 过滤"会话已创建"的系统消息
+        if ("system".equals(messageType) && "会话已创建".equals(content)) {
+            // 不保存这类消息到数据库
+            return true;
+        }
+        
         AiAvatarChatHistory chatHistory = new AiAvatarChatHistory();
         chatHistory.setUserId(userId);
         chatHistory.setAiAvatarId(aiAvatarId);
@@ -71,19 +77,8 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
         // 生成标准UUID格式的会话ID
         String sessionId = UUID.randomUUID().toString();
         
-        // 创建一个初始会话记录
-        AiAvatarChatHistory chatHistory = new AiAvatarChatHistory();
-        chatHistory.setUserId(userId);
-        chatHistory.setAiAvatarId(aiAvatarId);
-        chatHistory.setSessionId(sessionId);
-        chatHistory.setSessionName("新对话");
-        chatHistory.setMessageType("system");
-        chatHistory.setContent("会话已创建");
-        chatHistory.setTokens(0);
-        chatHistory.setCreateTime(new Date());
-        
-        this.save(chatHistory);
-        
+        // 不再创建"会话已创建"的初始记录
+        // 直接返回新生成的会话ID
         return sessionId;
     }
     

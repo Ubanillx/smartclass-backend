@@ -274,10 +274,7 @@ public class AiAvatarChatController {
                                         
                                         // 立即发送数据块到前端，不等待累积
                                         emitter.send(event);
-                                        log.debug("SSE事件发送成功: 数据长度 {}", chunk.length());
                                     } catch (Exception e) {
-                                        // 使用debug级别记录，因为客户端断开连接是常见情况
-                                        log.debug("发送SSE数据块失败，客户端可能已断开: {}", e.getMessage());
                                         // 错误发生时安全地完成emitter
                                         safeCompleteEmitter(emitter, e);
                                     }
@@ -287,19 +284,15 @@ public class AiAvatarChatController {
                                 public void onComplete(String fullResponse) {
                                     try {
                                         // 发送完成事件
-                                        log.info("流式响应完成，总响应长度: {}", fullResponse.length());
                                         SseEmitter.SseEventBuilder event = SseEmitter.event()
                                             .data("{\"event\":\"complete\",\"message\":\"流式响应已完成\"}")
                                             .id("complete-" + System.currentTimeMillis())
                                             .name("complete");
                                         emitter.send(event);
-                                        log.info("已发送完成事件到前端");
                                         
                                         // 完成SSE流
                                         safeCompleteEmitter(emitter, null);
-                                        log.info("SSE连接已安全关闭");
                                     } catch (Exception e) {
-                                        log.debug("结束SSE流时出错，客户端可能已断开: {}", e.getMessage());
                                         safeCompleteEmitter(emitter, e);
                                     }
                                 }
@@ -317,7 +310,6 @@ public class AiAvatarChatController {
                                         // 以错误结束SSE流
                                         safeCompleteEmitter(emitter, error);
                                     } catch (Exception e) {
-                                        log.debug("发送错误事件失败，客户端可能已断开: {}", e.getMessage());
                                         safeCompleteEmitter(emitter, error);
                                     }
                                 }
@@ -343,7 +335,6 @@ public class AiAvatarChatController {
             
             // 添加超时和完成时的回调
             emitter.onTimeout(() -> {
-                log.warn("SSE连接超时");
                 try {
                     SseEmitter.SseEventBuilder event = SseEmitter.event()
                         .data("{\"event\":\"timeout\",\"message\":\"连接超时\"}")
@@ -351,20 +342,17 @@ public class AiAvatarChatController {
                         .name("timeout");
                     emitter.send(event);
                 } catch (Exception e) {
-                    log.debug("发送超时事件失败", e);
+                    // 忽略异常
                 }
             });
             
             emitter.onCompletion(() -> {
-                log.info("SSE连接已完成");
+                // 移除日志打印
             });
             
             emitter.onError(error -> {
-                log.warn("SSE连接发生错误: {}", error.getMessage());
+                // 移除日志打印
             });
-            
-            // 验证这是可以正常工作的
-            log.info("SSE emitter创建成功，流式处理已开始");
             
         } catch (Exception e) {
             log.error("设置流式聊天时出错: {}", e.getMessage());
@@ -386,7 +374,7 @@ public class AiAvatarChatController {
             }
         } catch (Exception e) {
             // 通常这意味着emitter已经被完成或关闭了
-            log.debug("完成SSE emitter时发生错误，可能已被关闭: {}", e.getMessage());
+            // 移除日志打印
         }
     }
     
@@ -1079,10 +1067,7 @@ public class AiAvatarChatController {
                                         
                                         // 立即发送数据块到前端，不等待累积
                                         emitter.send(event);
-                                        log.debug("SSE事件发送成功: 数据长度 {}", chunk.length());
                                     } catch (Exception e) {
-                                        // 使用debug级别记录，因为客户端断开连接是常见情况
-                                        log.debug("发送SSE数据块失败，客户端可能已断开: {}", e.getMessage());
                                         // 错误发生时安全地完成emitter
                                         safeCompleteEmitter(emitter, e);
                                     }
@@ -1092,19 +1077,15 @@ public class AiAvatarChatController {
                                 public void onComplete(String fullResponse) {
                                     try {
                                         // 发送完成事件
-                                        log.info("流式响应完成，总响应长度: {}", fullResponse.length());
                                         SseEmitter.SseEventBuilder event = SseEmitter.event()
                                             .data("{\"event\":\"complete\",\"message\":\"流式响应已完成\"}")
                                             .id("complete-" + System.currentTimeMillis())
                                             .name("complete");
                                         emitter.send(event);
-                                        log.info("已发送完成事件到前端");
                                         
                                         // 完成SSE流
                                         safeCompleteEmitter(emitter, null);
-                                        log.info("SSE连接已安全关闭");
                                     } catch (Exception e) {
-                                        log.debug("结束SSE流时出错，客户端可能已断开: {}", e.getMessage());
                                         safeCompleteEmitter(emitter, e);
                                     }
                                 }
@@ -1122,7 +1103,6 @@ public class AiAvatarChatController {
                                         // 以错误结束SSE流
                                         safeCompleteEmitter(emitter, error);
                                     } catch (Exception e) {
-                                        log.debug("发送错误事件失败，客户端可能已断开: {}", e.getMessage());
                                         safeCompleteEmitter(emitter, error);
                                     }
                                 }
@@ -1148,7 +1128,6 @@ public class AiAvatarChatController {
             
             // 添加超时和完成时的回调
             emitter.onTimeout(() -> {
-                log.warn("SSE连接超时");
                 try {
                     SseEmitter.SseEventBuilder event = SseEmitter.event()
                         .data("{\"event\":\"timeout\",\"message\":\"连接超时\"}")
@@ -1156,19 +1135,17 @@ public class AiAvatarChatController {
                         .name("timeout");
                     emitter.send(event);
                 } catch (Exception e) {
-                    log.debug("发送超时事件失败", e);
+                    // 忽略异常
                 }
             });
             
             emitter.onCompletion(() -> {
-                log.info("SSE连接已完成");
+                // 移除日志打印
             });
             
             emitter.onError(error -> {
-                log.warn("SSE连接发生错误: {}", error.getMessage());
+                // 移除日志打印
             });
-            
-            log.info("SSE emitter创建成功，带文件的流式处理已开始");
             
         } catch (Exception e) {
             log.error("设置带文件的流式聊天时出错: {}", e.getMessage());
@@ -1204,7 +1181,6 @@ public class AiAvatarChatController {
     /**
      * 分页获取用户的聊天历史记录
      *
-     * @param aiAvatarId AI分身ID (可选)
      * @param current 当前页
      * @param pageSize 每页大小
      * @param request HTTP请求
@@ -1212,7 +1188,6 @@ public class AiAvatarChatController {
      */
     @GetMapping("/user/history")
     public BaseResponse<Page<ChatMessageVO>> getUserHistoryPage(
-            @RequestParam(required = false) Long aiAvatarId,
             @RequestParam(defaultValue = "1") long current,
             @RequestParam(defaultValue = "10") long pageSize,
             HttpServletRequest request) {
@@ -1226,7 +1201,7 @@ public class AiAvatarChatController {
         
         // 获取用户的聊天历史记录
         Page<AiAvatarChatHistory> historyPage = aiAvatarChatHistoryService.getUserHistoryPage(
-                loginUser.getId(), aiAvatarId, current, pageSize);
+                loginUser.getId(), null, current, pageSize);
         
         // 转换为VO对象
         Page<ChatMessageVO> chatMessageVOPage = new Page<>(current, pageSize, historyPage.getTotal());
@@ -1252,6 +1227,11 @@ public class AiAvatarChatController {
         }).collect(Collectors.toList());
         
         chatMessageVOPage.setRecords(chatMessageVOList);
+        
+        // 添加分页信息
+        chatMessageVOPage.setCurrent(current);
+        chatMessageVOPage.setSize(pageSize);
+        chatMessageVOPage.setPages((historyPage.getTotal() + pageSize - 1) / pageSize); // 计算总页数
         
         return ResultUtils.success(chatMessageVOPage);
     }

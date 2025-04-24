@@ -87,14 +87,12 @@ public class DifyServiceImpl implements DifyService {
             // 如果是重试并且会话不存在，则不传会话ID
             if (retried) {
                 chatRequest.setConversation_id(null);
-                log.info("重试请求，不传会话ID");
             }
 
             // 发送请求
             String chatMessagesPath = "/chat-messages"; // API路径
             String url = baseUrl + chatMessagesPath;
             String requestJson = JSONUtil.toJsonStr(chatRequest);
-            log.info("Sending request to Dify: {}", requestJson);
 
             // 添加请求头
             Map<String, String> headers = new HashMap<>();
@@ -122,7 +120,6 @@ public class DifyServiceImpl implements DifyService {
                     // 检查是否为会话不存在的错误
                     if (response.code() == 404 && !retried) {
                         if (responseBody.contains("Conversation Not Exists")) {
-                            log.info("会话ID不存在，将创建新会话: {}", sessionId);
                             // 递归调用，但设置retried标志，不传会话ID
                             return sendChatMessageWithRetry(userId, aiAvatarId, null, content, baseUrl, avatarAuth, userMessage, true);
                         }
@@ -173,7 +170,6 @@ public class DifyServiceImpl implements DifyService {
 
         } catch (Exception e) {
             if (!retried && (e.getMessage().contains("Conversation Not Exists") || e.getMessage().contains("404"))) {
-                log.info("会话ID不存在异常，将创建新会话: {}", sessionId);
                 // 递归调用，但设置retried标志
                 return sendChatMessageWithRetry(userId, aiAvatarId, null, content, baseUrl, avatarAuth, userMessage, true);
             }
@@ -230,14 +226,12 @@ public class DifyServiceImpl implements DifyService {
             // 如果是重试并且会话不存在，则不传会话ID
             if (retried) {
                 chatRequest.setConversation_id(null);
-                log.info("重试流式请求，不传会话ID");
             }
 
             // 发送请求
             String chatMessagesPath = "/chat-messages"; // API路径
             String url = baseUrl + chatMessagesPath;
             String requestJson = JSONUtil.toJsonStr(chatRequest);
-            log.info("Sending streaming request to Dify: {}", requestJson);
 
             // 添加请求头
             Map<String, String> headers = new HashMap<>();
@@ -263,7 +257,6 @@ public class DifyServiceImpl implements DifyService {
                     // 检查是否为会话不存在的错误
                     if (response.code() == 404 && !retried) {
                         if (responseBody.contains("Conversation Not Exists")) {
-                            log.info("流式请求会话ID不存在，将创建新会话: {}", sessionId);
                             // 关闭响应
                             response.close();
                             // 递归调用，但设置retried标志，不传会话ID
@@ -288,36 +281,21 @@ public class DifyServiceImpl implements DifyService {
                     // 使用BufferedReader逐行读取SSE流
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(responseBody.byteStream()))) {
                         String line;
-                        log.info("开始接收流式数据...");
                         int lineCount = 0;
 
                         try {
                             while ((line = reader.readLine()) != null) {
                                 lineCount++;
-                                if (lineCount % 10 == 0) {
-                                    log.info("已接收 {} 行SSE数据", lineCount);
-                                }
+                                // 移除日志计数相关日志打印
 
                                 // 处理SSE数据行
                                 if (line.startsWith("data: ")) {
                                     // 提取JSON数据内容
                                     String jsonData = line.substring(6); // 移除 "data: " 前缀
 
-                                    if (difyConfig.isEnableStreamingVerboseLog()) {
-                                        log.info("接收到SSE数据行: {}", line.substring(0, Math.min(50, line.length())) + (line.length() > 50 ? "..." : ""));
-                                    } else {
-                                        log.debug("接收到SSE数据行: {}", line.substring(0, Math.min(50, line.length())) + (line.length() > 50 ? "..." : ""));
-                                    }
-
                                     // 立即将数据传递给回调，不等待整个事件结束
                                     if (!jsonData.isEmpty()) {
                                         try {
-                                            // 先发送原始数据给回调
-                                            if (difyConfig.isEnableStreamingVerboseLog()) {
-                                                log.info("立即转发数据行给回调函数");
-                                            } else {
-                                                log.debug("立即转发数据行给回调函数");
-                                            }
                                             // 首先发送给回调，确保前端立即收到
                                             callback.onMessage(jsonData);
 
@@ -329,52 +307,40 @@ public class DifyServiceImpl implements DifyService {
                                                 if ("message".equals(chunk.getEvent()) && chunk.getAnswer() != null) {
                                                     // 累积完整响应
                                                     fullResponseRef.updateAndGet(prev -> prev + chunk.getAnswer());
-                                                    log.debug("累积内容: {}", chunk.getAnswer());
     
                                                     // 保存消息ID
                                                     if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
                                                         messageIdRef.set(chunk.getId());
-                                                        log.info("获取到消息ID: {}", chunk.getId());
                                                     }
     
                                                     // 保存会话ID
                                                     if (chunk.getConversation_id() != null) {
                                                         conversationIdRef.set(chunk.getConversation_id());
-                                                        log.debug("获取到会话ID: {}", chunk.getConversation_id());
                                                     }
                                                 } else if ("message_end".equals(chunk.getEvent())) {
                                                     // 消息结束事件，记录但不做特殊处理
-                                                    log.info("收到消息结束事件: {}", jsonData);
                                                 } else if ("error".equals(chunk.getEvent())) {
-                                                    // 错误事件
-                                                    log.error("收到错误事件: {}", jsonData);
+                                                    // 错误事件，保留内部处理逻辑但移除日志
                                                 } else if ("ping".equals(chunk.getEvent())) {
                                                     // ping事件，用于保持连接活跃
-                                                    log.debug("收到ping事件");
                                                 }
                                             } catch (Exception e) {
-                                                log.error("解析数据行异常: {}", jsonData, e);
-                                                // 解析异常不影响原始数据传递，已在上面发送过原始数据
+                                                // 移除日志，但保留异常处理逻辑
                                             }
                                         } catch (Exception e) {
-                                            log.error("处理数据行异常: {}", jsonData, e);
+                                            // 移除日志，但保留异常处理逻辑
                                         }
                                     }
                                 } else if (line.trim().isEmpty()) {
                                     // 空行，忽略
-                                    log.debug("接收到空行");
                                     continue;
-                                } else {
-                                    // 其他类型的SSE行，例如event:、id:等
-                                    log.debug("其他SSE行: {}", line);
                                 }
                             }
                         } catch (IOException e) {
-                            log.error("读取流式数据行时发生IO异常", e);
+                            // 简化日志但保留错误处理
+                            log.error("读取流式数据IO异常");
                             callback.onError(e);
                         }
-
-                        log.info("流式数据接收完成，共接收 {} 行数据", lineCount);
 
                         // 流结束，处理最终工作
                         String fullResponse = fullResponseRef.get();
@@ -382,8 +348,6 @@ public class DifyServiceImpl implements DifyService {
 
                         // 检查会话ID是否有变化
                         if (!finalConversationId.equals(sessionId)) {
-                            log.info("Dify创建了新会话ID: {}, 原会话ID: {}", finalConversationId, sessionId);
-
                             // 更新用户消息的会话ID
                             AiAvatarChatHistory updatedUserMessage = new AiAvatarChatHistory();
                             updatedUserMessage.setId(userMessage.getId());
@@ -405,13 +369,15 @@ public class DifyServiceImpl implements DifyService {
                         callback.onComplete(fullResponse);
 
                     } catch (IOException e) {
-                        log.error("Error reading streaming response", e);
+                        // 简化日志但保留错误处理
+                        log.error("处理流式响应异常");
                         callback.onError(e);
                     } finally {
                         try {
                             responseBody.close();
                         } catch (Exception e) {
-                            log.error("Error closing response body", e);
+                            // 简化关闭响应体的日志
+                            log.error("关闭响应体异常");
                         }
                     }
                 });
@@ -429,7 +395,6 @@ public class DifyServiceImpl implements DifyService {
 
         } catch (Exception e) {
             if (!retried && (e.getMessage().contains("Conversation Not Exists") || e.getMessage().contains("404"))) {
-                log.info("流式请求会话ID不存在异常，将创建新会话: {}", sessionId);
                 // 递归调用，但设置retried标志
                 return sendStreamingWithRetry(userId, aiAvatarId, null, content, baseUrl, avatarAuth,
                         callback, userMessage, fullResponseRef, messageIdRef, conversationIdRef, true);
@@ -454,7 +419,6 @@ public class DifyServiceImpl implements DifyService {
         } else {
             // 不传conversation_id或传null，Dify会自动创建新会话
             chatRequest.setConversation_id(null);
-            log.info("会话ID不是有效UUID，将让Dify自动创建新会话。原会话ID: {}", sessionId);
         }
 
         chatRequest.setAuto_generate_name(true);
@@ -856,14 +820,12 @@ public class DifyServiceImpl implements DifyService {
             // 如果是重试并且会话不存在，则不传会话ID
             if (retried) {
                 chatRequest.setConversation_id(null);
-                log.info("重试带文件请求，不传会话ID");
             }
 
             // 发送请求
             String chatMessagesPath = "/chat-messages"; // API路径
             String url = baseUrl + chatMessagesPath;
             String requestJson = JSONUtil.toJsonStr(chatRequest);
-            log.info("Sending request with files to Dify: {}", requestJson);
 
             // 添加请求头
             Map<String, String> headers = new HashMap<>();
@@ -891,7 +853,6 @@ public class DifyServiceImpl implements DifyService {
                     // 检查是否为会话不存在的错误
                     if (response.code() == 404 && !retried) {
                         if (responseBody.contains("Conversation Not Exists")) {
-                            log.info("会话ID不存在，将创建新会话: {}", sessionId);
                             // 递归调用，但设置retried标志，不传会话ID
                             return sendChatMessageWithFilesRetry(userId, aiAvatarId, null, content, fileIds,
                                     baseUrl, avatarAuth, userMessage, true);
@@ -943,7 +904,6 @@ public class DifyServiceImpl implements DifyService {
 
         } catch (Exception e) {
             if (!retried && (e.getMessage().contains("Conversation Not Exists") || e.getMessage().contains("404"))) {
-                log.info("会话ID不存在异常，将创建新会话: {}", sessionId);
                 // 递归调用，但设置retried标志
                 return sendChatMessageWithFilesRetry(userId, aiAvatarId, null, content, fileIds, baseUrl, avatarAuth, userMessage, true);
             }
@@ -1042,8 +1002,6 @@ public class DifyServiceImpl implements DifyService {
                 }
             }
 
-            log.info("Sending streaming files request to Dify: {}", JSONUtil.toJsonStr(formData));
-
             // 添加请求头
             Map<String, String> headers = new HashMap<>();
             headers.put("Authorization", "Bearer " + avatarAuth);
@@ -1067,7 +1025,6 @@ public class DifyServiceImpl implements DifyService {
                     // 检查是否为会话不存在的错误
                     if (response.code() == 404 && !retried) {
                         if (responseBody.contains("Conversation Not Exists")) {
-                            log.info("带文件的流式请求会话ID不存在，将创建新会话: {}", sessionId);
                             // 关闭响应
                             response.close();
                             // 递归调用，但设置retried标志，不传会话ID
@@ -1092,36 +1049,21 @@ public class DifyServiceImpl implements DifyService {
                     // 使用BufferedReader逐行读取SSE流
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(responseBody.byteStream()))) {
                         String line;
-                        log.info("开始接收带文件的流式数据...");
                         int lineCount = 0;
 
                         try {
                             while ((line = reader.readLine()) != null) {
                                 lineCount++;
-                                if (lineCount % 10 == 0) {
-                                    log.info("已接收 {} 行SSE数据", lineCount);
-                                }
+                                // 移除日志计数相关日志打印
 
                                 // 处理SSE数据行
                                 if (line.startsWith("data: ")) {
                                     // 提取JSON数据内容
                                     String jsonData = line.substring(6); // 移除 "data: " 前缀
 
-                                    if (difyConfig.isEnableStreamingVerboseLog()) {
-                                        log.info("接收到SSE数据行: {}", line.substring(0, Math.min(50, line.length())) + (line.length() > 50 ? "..." : ""));
-                                    } else {
-                                        log.debug("接收到SSE数据行: {}", line.substring(0, Math.min(50, line.length())) + (line.length() > 50 ? "..." : ""));
-                                    }
-
                                     // 立即将数据传递给回调，不等待整个事件结束
                                     if (!jsonData.isEmpty()) {
                                         try {
-                                            // 先发送原始数据给回调
-                                            if (difyConfig.isEnableStreamingVerboseLog()) {
-                                                log.info("立即转发数据行给回调函数");
-                                            } else {
-                                                log.debug("立即转发数据行给回调函数");
-                                            }
                                             // 首先发送给回调，确保前端立即收到
                                             callback.onMessage(jsonData);
 
@@ -1133,55 +1075,42 @@ public class DifyServiceImpl implements DifyService {
                                                 if ("message".equals(chunk.getEvent()) && chunk.getAnswer() != null) {
                                                     // 累积完整响应
                                                     fullResponseRef.updateAndGet(prev -> prev + chunk.getAnswer());
-                                                    log.debug("累积内容: {}", chunk.getAnswer());
     
                                                     // 保存消息ID
                                                     if (messageIdRef.get().isEmpty() && chunk.getId() != null) {
                                                         messageIdRef.set(chunk.getId());
-                                                        log.info("获取到消息ID: {}", chunk.getId());
                                                     }
     
                                                     // 保存会话ID
                                                     if (chunk.getConversation_id() != null) {
                                                         conversationIdRef.set(chunk.getConversation_id());
-                                                        log.debug("获取到会话ID: {}", chunk.getConversation_id());
                                                     }
                                                 } else if ("message_file".equals(chunk.getEvent())) {
                                                     // 文件消息事件，记录但由回调处理具体逻辑
-                                                    log.debug("收到文件消息事件: {}", jsonData);
                                                 } else if ("message_end".equals(chunk.getEvent())) {
                                                     // 消息结束事件，记录但不做特殊处理
-                                                    log.info("收到消息结束事件: {}", jsonData);
                                                 } else if ("error".equals(chunk.getEvent())) {
-                                                    // 错误事件
-                                                    log.error("收到错误事件: {}", jsonData);
+                                                    // 错误事件，保留内部处理逻辑但移除日志
                                                 } else if ("ping".equals(chunk.getEvent())) {
                                                     // ping事件，用于保持连接活跃
-                                                    log.debug("收到ping事件");
                                                 }
                                             } catch (Exception e) {
-                                                log.error("解析数据行异常: {}", jsonData, e);
-                                                // 解析异常不影响原始数据传递，已在上面发送过原始数据
+                                                // 移除日志，但保留异常处理逻辑
                                             }
                                         } catch (Exception e) {
-                                            log.error("处理数据行异常: {}", jsonData, e);
+                                            // 移除日志，但保留异常处理逻辑
                                         }
                                     }
                                 } else if (line.trim().isEmpty()) {
                                     // 空行，忽略
-                                    log.debug("接收到空行");
                                     continue;
-                                } else {
-                                    // 其他类型的SSE行，例如event:、id:等
-                                    log.debug("其他SSE行: {}", line);
                                 }
                             }
                         } catch (IOException e) {
-                            log.error("读取带文件的流式数据行时发生IO异常", e);
+                            // 简化日志但保留错误处理
+                            log.error("读取带文件流式数据IO异常");
                             callback.onError(e);
                         }
-
-                        log.info("流式数据接收完成，共接收 {} 行数据", lineCount);
 
                         // 流结束，处理最终工作
                         String fullResponse = fullResponseRef.get();
@@ -1189,8 +1118,6 @@ public class DifyServiceImpl implements DifyService {
 
                         // 检查会话ID是否有变化
                         if (finalConversationId != null && !finalConversationId.equals(sessionId)) {
-                            log.info("Dify创建了新会话ID: {}, 原会话ID: {}", finalConversationId, sessionId);
-
                             // 更新用户消息的会话ID
                             AiAvatarChatHistory updatedUserMessage = new AiAvatarChatHistory();
                             updatedUserMessage.setId(userMessage.getId());
@@ -1212,13 +1139,15 @@ public class DifyServiceImpl implements DifyService {
                         callback.onComplete(fullResponse);
 
                     } catch (IOException e) {
-                        log.error("Error reading streaming response", e);
+                        // 简化日志但保留错误处理
+                        log.error("处理带文件流式响应异常");
                         callback.onError(e);
                     } finally {
                         try {
                             responseBody.close();
                         } catch (Exception e) {
-                            log.error("Error closing response body", e);
+                            // 简化关闭响应体的日志
+                            log.error("关闭响应体异常");
                         }
                     }
                 });
@@ -1236,7 +1165,6 @@ public class DifyServiceImpl implements DifyService {
 
         } catch (Exception e) {
             if (!retried && (e.getMessage().contains("Conversation Not Exists") || e.getMessage().contains("404"))) {
-                log.info("带文件的流式请求会话ID不存在异常，将创建新会话: {}", sessionId);
                 // 递归调用，但设置retried标志
                 return sendStreamingWithFilesRetry(userId, aiAvatarId, null, content, fileIds, baseUrl, avatarAuth,
                         callback, userMessage, fullResponseRef, messageIdRef, conversationIdRef, true);
