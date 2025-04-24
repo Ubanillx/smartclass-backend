@@ -667,30 +667,29 @@ create table if not exists chat_message
 ) comment 'AI聊天消息' collate = utf8mb4_unicode_ci;
 
 -- 每日单词表
-create table if not exists daily_word
+CREATE TABLE IF NOT EXISTS daily_word
 (
-    id                 bigint auto_increment comment 'id' primary key,
-    word               varchar(128)                       not null comment '单词',
-    pronunciation      varchar(128)                       null comment '音标',
-    audioUrl           varchar(1024)                      null comment '发音音频URL',
-    translation        varchar(512)                       not null comment '翻译',
-    example            text                               null comment '例句',
-    exampleTranslation text                               null comment '例句翻译',
-    difficulty         tinyint  default 1                 not null comment '难度等级：1-简单，2-中等，3-困难',
-    category           varchar(64)                        null comment '单词分类',
-    likeCount          int DEFAULT 0                      not null comment '点赞次数' after adminId;
-    notes              text                               null comment '单词笔记或补充说明',
-    publishDate        date                               not null comment '发布日期',
-    adminId            bigint                             not null comment '创建管理员id',
-    createTime         datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime         datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete           tinyint  default 0                 not null comment '是否删除',
-    index idx_publishDate (publishDate),
-    index idx_word (word),
-    index idx_category (category),
-    index idx_difficulty (difficulty)
-) comment '每日单词' collate = utf8mb4_unicode_ci;
-
+    id                 BIGINT AUTO_INCREMENT COMMENT 'ID' PRIMARY KEY,
+    word               VARCHAR(128) NOT NULL COMMENT '单词',
+    pronunciation      VARCHAR(128) NULL COMMENT '音标',
+    audioUrl           VARCHAR(2048) NULL COMMENT '发音音频URL',
+    translation        VARCHAR(512) NOT NULL COMMENT '翻译',
+    example            TEXT NULL COMMENT '例句',
+    exampleTranslation TEXT NULL COMMENT '例句翻译',
+    difficulty         TINYINT DEFAULT 1 NOT NULL COMMENT '难度等级：1-简单，2-中等，3-困难',
+    category           VARCHAR(64) NULL COMMENT '单词分类（如名词、动词、商务英语等）',
+    notes              TEXT NULL COMMENT '单词笔记或补充说明',
+    likeCount          INT DEFAULT 0 NOT NULL COMMENT '点赞次数',
+    publishDate        DATE NOT NULL COMMENT '发布日期',
+    adminId            BIGINT NOT NULL COMMENT '创建管理员ID',
+    createTime         DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime         DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete           TINYINT DEFAULT 0 NOT NULL COMMENT '是否删除：0-未删除，1-已删除',
+    INDEX idx_publishDate (publishDate),
+    INDEX idx_word (word),
+    INDEX idx_category (category),
+    INDEX idx_difficulty (difficulty)
+) COMMENT '每日单词' COLLATE = utf8mb4_unicode_ci;
 -- 每日文章表
 create table if not exists daily_article
 (
