@@ -208,6 +208,16 @@ public class CosManager {
         long fileSize = multipartFile.getSize();
         // 文件后缀校验
         String fileSuffix = FileUtil.getSuffix(multipartFile.getOriginalFilename());
+        
+        // 处理通用文件类型
+        if (FileUploadBizEnum.GENERAL.equals(biz)) {
+            // 通用文件类型不限制文件类型，只限制大小
+            if (fileSize > FileConstant.ONE_HUNDRED_MB) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件大小不能超过100MB");
+            }
+            return;
+        }
+        
         if (FileUploadBizEnum.USER_AVATAR.equals(biz)) {
             if (fileSize > FileConstant.ONE_MB * cosClientConfig.getUpload().getMaxAvatarSize()) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件大小不能超过 " + cosClientConfig.getUpload().getMaxAvatarSize() + "MB");
