@@ -346,6 +346,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public UserVO getUserVOById(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        User user = this.getById(userId);
+        return getUserVO(user);
+    }
+
+    @Override
     public QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest) {
         if (userQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");

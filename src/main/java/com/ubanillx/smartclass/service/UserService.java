@@ -126,6 +126,14 @@ public interface UserService extends IService<User> {
      * @return
      */
     List<UserVO> getUserVO(List<User> userList);
+    
+    /**
+     * 根据用户ID获取脱敏的用户信息
+     *
+     * @param userId 用户ID
+     * @return 脱敏后的用户信息
+     */
+    UserVO getUserVOById(Long userId);
 
     /**
      * 获取查询条件
