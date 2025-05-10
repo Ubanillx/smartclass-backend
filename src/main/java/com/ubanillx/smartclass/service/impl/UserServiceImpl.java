@@ -378,4 +378,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 sortField);
         return queryWrapper;
     }
+
+    @Override
+    public List<User> getAllAdmins() {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userRole", UserRoleEnum.ADMIN.getValue());
+        queryWrapper.eq("isDelete", 0); // 未删除的用户
+        return this.list(queryWrapper);
+    }
 }

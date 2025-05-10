@@ -44,5 +44,25 @@ public class UserVO implements Serializable {
      */
     private Date createTime;
 
+    /**
+     * 用户所在省份
+     */
+    private String province;
+
+    /**
+     * 用户所在城市
+     */
+    private String city;
+
+    /**
+     * 用户所在区县
+     */
+    private String district;
+
+    /**
+     * 用户生日
+     */
+    private Date birthday;
+
     private static final long serialVersionUID = 1L;
 }
