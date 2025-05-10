@@ -1,6 +1,7 @@
 package com.ubanillx.smartclass.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ubanillx.smartclass.model.dto.dailyarticle.DailyArticleQueryRequest;
 import com.ubanillx.smartclass.model.entity.DailyArticle;
@@ -24,14 +25,6 @@ public interface DailyArticleService extends IService<DailyArticle> {
      * @return
      */
     long addDailyArticle(DailyArticle dailyArticle, Long adminId);
-
-    /**
-     * 获取指定日期的每日文章
-     *
-     * @param date
-     * @return
-     */
-    List<DailyArticleVO> getDailyArticleByDate(Date date);
 
     /**
      * 获取每日文章视图
@@ -82,20 +75,41 @@ public interface DailyArticleService extends IService<DailyArticle> {
     boolean decreaseLikeCount(Long id);
 
     /**
-     * 获取推荐文章
-     *
-     * @param category
-     * @param difficulty
-     * @param limit
-     * @return
-     */
-    List<DailyArticleVO> getRecommendArticles(String category, Integer difficulty, int limit);
-
-    /**
      * 随机获取一篇最新的文章
      *
      * @return 随机选择的最新文章
      */
     DailyArticleVO getRandomLatestArticle();
-
+    
+    /**
+     * 从ES中搜索每日美文
+     *
+     * @param dailyArticleQueryRequest 查询条件
+     * @return 分页结果
+     */
+    Page<DailyArticle> searchFromEs(DailyArticleQueryRequest dailyArticleQueryRequest);
+    
+    /**
+     * 保存每日美文并同步到ES
+     *
+     * @param dailyArticle 每日美文
+     * @return 是否成功
+     */
+    boolean saveDailyArticle(DailyArticle dailyArticle);
+    
+    /**
+     * 更新每日美文并同步到ES
+     *
+     * @param dailyArticle 每日美文
+     * @return 是否成功
+     */
+    boolean updateDailyArticle(DailyArticle dailyArticle);
+    
+    /**
+     * 删除每日美文并同步到ES
+     *
+     * @param id 每日美文ID
+     * @return 是否成功
+     */
+    boolean deleteDailyArticle(Long id);
 }

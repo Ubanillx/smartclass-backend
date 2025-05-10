@@ -3,10 +3,13 @@ package com.ubanillx.smartclass.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.constant.CommonConstant;
+import com.ubanillx.smartclass.esdao.DailyArticleEsDao;
 import com.ubanillx.smartclass.exception.BusinessException;
+import com.ubanillx.smartclass.model.dto.dailyarticle.DailyArticleEsDTO;
 import com.ubanillx.smartclass.model.dto.dailyarticle.DailyArticleQueryRequest;
 import com.ubanillx.smartclass.model.entity.DailyArticle;
 import com.ubanillx.smartclass.model.vo.DailyArticleVO;
@@ -16,13 +19,26 @@ import com.ubanillx.smartclass.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +50,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, DailyArticle>
     implements DailyArticleService{
+
+    @Resource
+    private ElasticsearchRestTemplate elasticsearchRestTemplate;
+    
+    @Resource
+    private DailyArticleEsDao dailyArticleEsDao;
 
     @Override
     public long addDailyArticle(DailyArticle dailyArticle, Long adminId) {
@@ -63,20 +85,6 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "添加失败");
         }
         return dailyArticle.getId();
-    }
-
-    @Override
-    public List<DailyArticleVO> getDailyArticleByDate(Date date) {
-        if (date == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "日期不能为空");
-        }
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String dateString = sdf.format(date);
-        QueryWrapper<DailyArticle> queryWrapper = new QueryWrapper<>();
-        // 转换为日期字符串进行比较，忽略时分秒
-        queryWrapper.apply("DATE_FORMAT(publishDate, '%Y-%m-%d') = {0}", dateString);
-        List<DailyArticle> dailyArticleList = this.list(queryWrapper);
-        return this.getDailyArticleVO(dailyArticleList);
     }
 
     @Override
@@ -178,23 +186,6 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
     }
 
     @Override
-    public List<DailyArticleVO> getRecommendArticles(String category, Integer difficulty, int limit) {
-        QueryWrapper<DailyArticle> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("isDelete", 0);
-        if (StringUtils.isNotBlank(category)) {
-            queryWrapper.eq("category", category);
-        }
-        if (difficulty != null) {
-            queryWrapper.eq("difficulty", difficulty);
-        }
-        // 按照查看次数和点赞次数排序，获取热门文章
-        queryWrapper.orderByDesc("viewCount", "likeCount");
-        queryWrapper.last("LIMIT " + limit);
-        List<DailyArticle> dailyArticleList = this.list(queryWrapper);
-        return this.getDailyArticleVO(dailyArticleList);
-    }
-    
-    @Override
     public DailyArticleVO getRandomLatestArticle() {
         // 查询最新的10篇文章
         QueryWrapper<DailyArticle> queryWrapper = new QueryWrapper<>();
@@ -214,6 +205,215 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
         
         // 返回文章视图对象
         return this.getDailyArticleVO(randomArticle);
+    }
+
+    @Override
+    public Page<DailyArticle> searchFromEs(DailyArticleQueryRequest dailyArticleQueryRequest) {
+        if (dailyArticleQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        
+        Long id = dailyArticleQueryRequest.getId();
+        String title = dailyArticleQueryRequest.getTitle();
+        String summary = dailyArticleQueryRequest.getSummary();
+        String content = dailyArticleQueryRequest.getContent();
+        String author = dailyArticleQueryRequest.getAuthor();
+        String source = dailyArticleQueryRequest.getSource();
+        String category = dailyArticleQueryRequest.getCategory();
+        String tags = dailyArticleQueryRequest.getTags();
+        Integer difficulty = dailyArticleQueryRequest.getDifficulty();
+        Date publishDateStart = dailyArticleQueryRequest.getPublishDateStart();
+        Date publishDateEnd = dailyArticleQueryRequest.getPublishDateEnd();
+        Long adminId = dailyArticleQueryRequest.getAdminId();
+        
+        // es 起始页为 0
+        long current = dailyArticleQueryRequest.getCurrent() - 1;
+        long pageSize = dailyArticleQueryRequest.getPageSize();
+        String sortField = dailyArticleQueryRequest.getSortField();
+        String sortOrder = dailyArticleQueryRequest.getSortOrder();
+        
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        // 过滤
+        boolQueryBuilder.filter(QueryBuilders.termQuery("isDelete", 0));
+        
+        // 按id查询
+        if (id != null) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("id", id));
+        }
+        
+        // 按管理员id查询
+        if (adminId != null) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("adminId", adminId));
+        }
+        
+        // 按难度查询
+        if (difficulty != null) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("difficulty", difficulty));
+        }
+        
+        // 按分类查询
+        if (StringUtils.isNotBlank(category)) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("category", category));
+        }
+        
+        // 按作者查询
+        if (StringUtils.isNotBlank(author)) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("author", author));
+        }
+        
+        // 按来源查询
+        if (StringUtils.isNotBlank(source)) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("source", source));
+        }
+        
+        // 按发布日期范围查询
+        if (publishDateStart != null) {
+            boolQueryBuilder.filter(QueryBuilders.rangeQuery("publishDate").gte(publishDateStart));
+        }
+        if (publishDateEnd != null) {
+            boolQueryBuilder.filter(QueryBuilders.rangeQuery("publishDate").lte(publishDateEnd));
+        }
+        
+        // 按标题查询
+        if (StringUtils.isNotBlank(title)) {
+            boolQueryBuilder.should(QueryBuilders.matchQuery("title", title));
+            boolQueryBuilder.minimumShouldMatch(1);
+        }
+        
+        // 按摘要查询
+        if (StringUtils.isNotBlank(summary)) {
+            boolQueryBuilder.should(QueryBuilders.matchQuery("summary", summary));
+            boolQueryBuilder.minimumShouldMatch(1);
+        }
+        
+        // 按内容查询
+        if (StringUtils.isNotBlank(content)) {
+            boolQueryBuilder.should(QueryBuilders.matchQuery("content", content));
+            boolQueryBuilder.minimumShouldMatch(1);
+        }
+        
+        // 按标签查询
+        if (StringUtils.isNotBlank(tags)) {
+            boolQueryBuilder.should(QueryBuilders.matchQuery("tags", tags));
+            boolQueryBuilder.minimumShouldMatch(1);
+        }
+        
+        // 排序
+        SortBuilder<?> sortBuilder = SortBuilders.scoreSort();
+        if (StringUtils.isNotBlank(sortField)) {
+            sortBuilder = SortBuilders.fieldSort(sortField);
+            sortBuilder.order(CommonConstant.SORT_ORDER_ASC.equals(sortOrder) ? SortOrder.ASC : SortOrder.DESC);
+        }
+        
+        // 分页
+        PageRequest pageRequest = PageRequest.of((int) current, (int) pageSize);
+        
+        // 构造查询
+        NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(boolQueryBuilder)
+                .withPageable(pageRequest)
+                .withSorts(sortBuilder)
+                .build();
+        
+        SearchHits<DailyArticleEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, DailyArticleEsDTO.class);
+        Page<DailyArticle> page = new Page<>();
+        page.setTotal(searchHits.getTotalHits());
+        List<DailyArticle> resourceList = new ArrayList<>();
+        
+        // 查出结果后，从 db 获取最新数据
+        if (searchHits.hasSearchHits()) {
+            List<SearchHit<DailyArticleEsDTO>> searchHitList = searchHits.getSearchHits();
+            List<Long> dailyArticleIdList = searchHitList.stream()
+                    .map(searchHit -> searchHit.getContent().getId())
+                    .collect(Collectors.toList());
+            
+            List<DailyArticle> dailyArticleList = baseMapper.selectBatchIds(dailyArticleIdList);
+            if (CollUtil.isNotEmpty(dailyArticleList)) {
+                Map<Long, List<DailyArticle>> idDailyArticleMap = dailyArticleList.stream()
+                        .collect(Collectors.groupingBy(DailyArticle::getId));
+                
+                dailyArticleIdList.forEach(dailyArticleId -> {
+                    if (idDailyArticleMap.containsKey(dailyArticleId)) {
+                        resourceList.add(idDailyArticleMap.get(dailyArticleId).get(0));
+                    } else {
+                        // 从 ES 清空 DB 已物理删除的数据
+                        String delete = elasticsearchRestTemplate.delete(String.valueOf(dailyArticleId), DailyArticleEsDTO.class);
+                        log.info("Delete dailyArticle {}", delete);
+                    }
+                });
+            }
+        }
+        
+        page.setRecords(resourceList);
+        return page;
+    }
+    
+    @Override
+    public boolean saveDailyArticle(DailyArticle dailyArticle) {
+        if (dailyArticle == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        
+        // 设置初始值
+        if (dailyArticle.getViewCount() == null) {
+            dailyArticle.setViewCount(0);
+        }
+        if (dailyArticle.getLikeCount() == null) {
+            dailyArticle.setLikeCount(0);
+        }
+        if (dailyArticle.getPublishDate() == null) {
+            dailyArticle.setPublishDate(new Date());
+        }
+        if (StringUtils.isBlank(dailyArticle.getSummary()) && StringUtils.isNotBlank(dailyArticle.getContent())) {
+            // 如果摘要为空，自动截取内容前100个字符作为摘要
+            String content = dailyArticle.getContent();
+            int summaryLength = Math.min(content.length(), 100);
+            dailyArticle.setSummary(content.substring(0, summaryLength));
+        }
+        
+        boolean result = this.save(dailyArticle);
+        if (result) {
+            try {
+                // 同步到ES
+                DailyArticleEsDTO dailyArticleEsDTO = DailyArticleEsDTO.objToDto(dailyArticle);
+                dailyArticleEsDao.save(dailyArticleEsDTO);
+                log.info("同步新增每日美文到ES成功, id={}", dailyArticle.getId());
+            } catch (Exception e) {
+                log.error("同步新增每日美文到ES失败", e);
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public boolean updateDailyArticle(DailyArticle dailyArticle) {
+        boolean result = this.updateById(dailyArticle);
+        if (result) {
+            try {
+                // 同步到ES
+                DailyArticleEsDTO dailyArticleEsDTO = DailyArticleEsDTO.objToDto(dailyArticle);
+                dailyArticleEsDao.save(dailyArticleEsDTO);
+                log.info("同步更新每日美文到ES成功, id={}", dailyArticle.getId());
+            } catch (Exception e) {
+                log.error("同步更新每日美文到ES失败", e);
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public boolean deleteDailyArticle(Long id) {
+        boolean result = this.removeById(id);
+        if (result) {
+            try {
+                // 从ES中删除
+                dailyArticleEsDao.deleteById(id);
+                log.info("同步删除每日美文到ES成功, id={}", id);
+            } catch (Exception e) {
+                log.error("同步删除每日美文到ES失败", e);
+            }
+        }
+        return result;
     }
 }
 

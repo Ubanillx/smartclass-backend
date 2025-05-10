@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+import com.ubanillx.smartclass.model.dto.dailyarticle.DailyArticleEsDTO;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -41,6 +43,9 @@ public class DailyArticleController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
     // region 增删改查
 
@@ -62,8 +67,12 @@ public class DailyArticleController {
         BeanUtils.copyProperties(dailyArticleAddRequest, dailyArticle);
         User loginUser = userService.getLoginUser(request);
         Long adminId = loginUser.getId();
-        long id = dailyArticleService.addDailyArticle(dailyArticle, adminId);
-        return ResultUtils.success(id);
+        // 设置管理员ID
+        dailyArticle.setAdminId(adminId);
+        // 使用saveDailyArticle方法，同步到ES
+        boolean result = dailyArticleService.saveDailyArticle(dailyArticle);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(dailyArticle.getId());
     }
 
     /**
@@ -84,7 +93,8 @@ public class DailyArticleController {
         // 判断是否存在
         DailyArticle oldDailyArticle = dailyArticleService.getById(id);
         ThrowUtils.throwIf(oldDailyArticle == null, ErrorCode.NOT_FOUND_ERROR);
-        boolean b = dailyArticleService.removeById(id);
+        // 使用deleteDailyArticle方法，同步删除ES中的数据
+        boolean b = dailyArticleService.deleteDailyArticle(id);
         return ResultUtils.success(b);
     }
 
@@ -108,7 +118,8 @@ public class DailyArticleController {
         long id = dailyArticleUpdateRequest.getId();
         DailyArticle oldDailyArticle = dailyArticleService.getById(id);
         ThrowUtils.throwIf(oldDailyArticle == null, ErrorCode.NOT_FOUND_ERROR);
-        boolean result = dailyArticleService.updateById(dailyArticle);
+        // 使用updateDailyArticle方法，同步更新ES中的数据
+        boolean result = dailyArticleService.updateDailyArticle(dailyArticle);
         return ResultUtils.success(result);
     }
 
@@ -178,22 +189,6 @@ public class DailyArticleController {
     }
 
     /**
-     * 获取特定日期的文章
-     *
-     * @param date 日期 yyyy-MM-dd
-     * @return
-     */
-    @GetMapping("/date")
-    public BaseResponse<List<DailyArticleVO>> getDailyArticleByDate(
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
-        if (date == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        List<DailyArticleVO> dailyArticleVOList = dailyArticleService.getDailyArticleByDate(date);
-        return ResultUtils.success(dailyArticleVOList);
-    }
-
-    /**
      * 获取今日文章
      *
      * @return 随机返回一篇最新的文章
@@ -210,20 +205,42 @@ public class DailyArticleController {
     }
 
     /**
-     * 获取推荐文章
+     * 从ES搜索美文
      *
-     * @param category 分类
-     * @param difficulty 难度
-     * @param limit 返回数量限制
+     * @param dailyArticleQueryRequest
      * @return
      */
-    @GetMapping("/recommend")
-    public BaseResponse<List<DailyArticleVO>> getRecommendArticles(
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) Integer difficulty,
-            @RequestParam(defaultValue = "10") Integer limit) {
-        List<DailyArticleVO> dailyArticleVOList = dailyArticleService.getRecommendArticles(category, difficulty, limit);
-        return ResultUtils.success(dailyArticleVOList);
+    @PostMapping("/search/es")
+    public BaseResponse<Page<DailyArticleVO>> searchDailyArticle(@RequestBody DailyArticleQueryRequest dailyArticleQueryRequest) {
+        if (dailyArticleQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long size = dailyArticleQueryRequest.getPageSize();
+        // 限制爬虫
+        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        Page<DailyArticle> dailyArticlePage = dailyArticleService.searchFromEs(dailyArticleQueryRequest);
+        Page<DailyArticleVO> dailyArticleVOPage = new Page<>(dailyArticlePage.getCurrent(), size, dailyArticlePage.getTotal());
+        List<DailyArticleVO> dailyArticleVOList = dailyArticleService.getDailyArticleVO(dailyArticlePage.getRecords());
+        dailyArticleVOPage.setRecords(dailyArticleVOList);
+        return ResultUtils.success(dailyArticleVOPage);
+    }
+    
+    /**
+     * 测试ES索引
+     *
+     * @return
+     */
+    @GetMapping("/es/test")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> testEsIndex() {
+        boolean existsIndex = elasticsearchRestTemplate.indexOps(DailyArticleEsDTO.class).exists();
+        if (!existsIndex) {
+            boolean createIndex = elasticsearchRestTemplate.indexOps(DailyArticleEsDTO.class).create();
+            if (!createIndex) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建ES索引失败");
+            }
+        }
+        return ResultUtils.success(true);
     }
 
 } 
