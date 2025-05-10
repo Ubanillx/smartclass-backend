@@ -17,9 +17,11 @@ services:
       - SPRING_REDIS_PORT=6379
       - SPRING_REDIS_PASSWORD=redis_wKaQkb
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
     depends_on:
       - mysql
       - redis
+      - elasticsearch
     networks:
       - smartclass-network
     restart: always
@@ -53,11 +55,29 @@ services:
     networks:
       - smartclass-network
     restart: always
+    
+  # Elasticsearch服务
+  elasticsearch:
+    image: elasticsearch:7.17.4
+    container_name: smartclass-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - smartclass-network
+    restart: always
 
 # 数据卷
 volumes:
   mysql-data:
   redis-data:
+  elasticsearch-data:
 
 # 网络配置
 networks:
