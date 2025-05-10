@@ -4,20 +4,22 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.exception.BusinessException;
+import com.ubanillx.smartclass.mapper.PostMapper;
 import com.ubanillx.smartclass.mapper.PostThumbMapper;
 import com.ubanillx.smartclass.model.entity.Post;
 import com.ubanillx.smartclass.model.entity.PostThumb;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.service.PostService;
 import com.ubanillx.smartclass.service.PostThumbService;
-import javax.annotation.Resource;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
+
 /**
  * 帖子点赞服务实现
-*/
+ */
 @Service
 public class PostThumbServiceImpl extends ServiceImpl<PostThumbMapper, PostThumb>
         implements PostThumbService {
@@ -25,12 +27,15 @@ public class PostThumbServiceImpl extends ServiceImpl<PostThumbMapper, PostThumb
     @Resource
     private PostService postService;
 
+    @Resource
+    private PostMapper postMapper;
+
     /**
      * 点赞
      *
-     * @param postId
-     * @param loginUser
-     * @return
+     * @param postId    帖子id
+     * @param loginUser 登录用户
+     * @return 点赞结果
      */
     @Override
     public int doPostThumb(long postId, User loginUser) {
@@ -44,17 +49,15 @@ public class PostThumbServiceImpl extends ServiceImpl<PostThumbMapper, PostThumb
         // 每个用户串行点赞
         // 锁必须要包裹住事务方法
         PostThumbService postThumbService = (PostThumbService) AopContext.currentProxy();
-        synchronized (String.valueOf(userId).intern()) {
-            return postThumbService.doPostThumbInner(userId, postId);
-        }
+        return postThumbService.doPostThumbInner(userId, postId);
     }
 
     /**
      * 封装了事务的方法
      *
-     * @param userId
-     * @param postId
-     * @return
+     * @param userId 用户id
+     * @param postId 帖子id
+     * @return 点赞结果
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -70,12 +73,8 @@ public class PostThumbServiceImpl extends ServiceImpl<PostThumbMapper, PostThumb
             result = this.remove(thumbQueryWrapper);
             if (result) {
                 // 点赞数 - 1
-                result = postService.update()
-                        .eq("id", postId)
-                        .gt("thumbNum", 0)
-                        .setSql("thumbNum = thumbNum - 1")
-                        .update();
-                return result ? -1 : 0;
+                postMapper.updateThumbNum(postId, -1);
+                return -1;
             } else {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR);
             }
@@ -84,17 +83,13 @@ public class PostThumbServiceImpl extends ServiceImpl<PostThumbMapper, PostThumb
             result = this.save(postThumb);
             if (result) {
                 // 点赞数 + 1
-                result = postService.update()
-                        .eq("id", postId)
-                        .setSql("thumbNum = thumbNum + 1")
-                        .update();
-                return result ? 1 : 0;
+                postMapper.updateThumbNum(postId, 1);
+                return 1;
             } else {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR);
             }
         }
     }
-
 }
 
 

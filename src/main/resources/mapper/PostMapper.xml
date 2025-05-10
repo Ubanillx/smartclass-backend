@@ -1,32 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ubanillx.smartclass.mapper.PostMapper">
 
     <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.Post">
-        <id property="id" column="id" jdbcType="BIGINT"/>
-        <result property="title" column="title" jdbcType="VARCHAR"/>
-        <result property="content" column="content" jdbcType="VARCHAR"/>
-        <result property="tags" column="tags" jdbcType="VARCHAR"/>
-        <result property="thumbNum" column="thumbNum" jdbcType="BIGINT"/>
-        <result property="favourNum" column="favourNum" jdbcType="BIGINT"/>
-        <result property="userId" column="userId" jdbcType="BIGINT"/>
-        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
-        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
-        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+            <id property="id" column="id" />
+            <result property="title" column="title" />
+            <result property="content" column="content" />
+            <result property="tags" column="tags" />
+            <result property="thumbNum" column="thumbNum" />
+            <result property="favourNum" column="favourNum" />
+            <result property="userId" column="userId" />
+            <result property="country" column="country" />
+            <result property="city" column="city" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
+            <result property="type" column="type" />
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,title,content,tags,
-        thumbNum,favourNum,userId,
-        createTime,updateTime,isDelete
+        id,title,content,tags,thumbNum,favourNum,
+        userId,country,city,createTime,updateTime,
+        isDelete,type
     </sql>
-
-    <select id="listPostWithDelete" resultType="com.ubanillx.smartclass.model.entity.Post">
-        select *
-        from post
-        where updateTime >= #{minUpdateTime}
+    
+    <!-- 查询帖子列表（包括已被删除的数据） -->
+    <select id="listPostWithDelete" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM post
+        WHERE updateTime >= #{minUpdateTime}
     </select>
 </mapper>
