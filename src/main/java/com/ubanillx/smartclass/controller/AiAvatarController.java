@@ -11,7 +11,6 @@ import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarQueryRequest;
 import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarUpdateRequest;
 import com.ubanillx.smartclass.model.entity.AiAvatar;
 import com.ubanillx.smartclass.model.entity.User;
-import com.ubanillx.smartclass.model.vo.AiAvatarBriefVO;
 import com.ubanillx.smartclass.model.vo.AiAvatarVO;
 import com.ubanillx.smartclass.service.AiAvatarService;
 import com.ubanillx.smartclass.service.UserService;
@@ -42,9 +41,9 @@ public class AiAvatarController {
     /**
      * 创建AI分身
      *
-     * @param aiAvatarAddRequest
-     * @param request
-     * @return
+     * @param aiAvatarAddRequest 添加请求
+     * @param request 请求体
+     * @return baseResponse
      */
     @PostMapping("/add")
     public BaseResponse<Long> addAiAvatar(@RequestBody AiAvatarAddRequest aiAvatarAddRequest, HttpServletRequest request) {
@@ -66,9 +65,9 @@ public class AiAvatarController {
     /**
      * 删除AI分身
      *
-     * @param deleteRequest
-     * @param request
-     * @return
+     * @param deleteRequest 删除请求
+     * @param request 请求体
+     * @return baseResponse
      */
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteAiAvatar(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
@@ -93,9 +92,9 @@ public class AiAvatarController {
     /**
      * 更新AI分身
      *
-     * @param aiAvatarUpdateRequest
-     * @param request
-     * @return
+     * @param aiAvatarUpdateRequest ai更新请求
+     * @param request 请求体
+     * @return baseResponse
      */
     @PostMapping("/update")
     public BaseResponse<Boolean> updateAiAvatar(@RequestBody AiAvatarUpdateRequest aiAvatarUpdateRequest,
@@ -175,8 +174,8 @@ public class AiAvatarController {
     /**
      * 根据 id 获取AI分身
      *
-     * @param id
-     * @return
+     * @param id ai分身id
+     * @return baseResponse
      */
     @GetMapping("/get")
     public BaseResponse<AiAvatarVO> getAiAvatarById(long id) {
@@ -195,12 +194,11 @@ public class AiAvatarController {
     /**
      * 获取列表（仅管理员可使用）
      *
-     * @param aiAvatarQueryRequest
-     * @param request
-     * @return
+     * @param aiAvatarQueryRequest ai查询请求
+     * @return baseResponse
      */
     @GetMapping("/list")
-    public BaseResponse<List<AiAvatarVO>> listAiAvatar(AiAvatarQueryRequest aiAvatarQueryRequest, HttpServletRequest request) {
+    public BaseResponse<List<AiAvatarVO>> listAiAvatar(AiAvatarQueryRequest aiAvatarQueryRequest) {
         if (aiAvatarQueryRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
@@ -220,12 +218,11 @@ public class AiAvatarController {
     /**
      * 分页获取列表
      *
-     * @param aiAvatarQueryRequest
-     * @param request
-     * @return
+     * @param aiAvatarQueryRequest ai查询请求
+     * @return baseResponse
      */
     @GetMapping("/list/page")
-    public BaseResponse<Page<AiAvatarVO>> listAiAvatarByPage(AiAvatarQueryRequest aiAvatarQueryRequest, HttpServletRequest request) {
+    public BaseResponse<Page<AiAvatarVO>> listAiAvatarByPage(AiAvatarQueryRequest aiAvatarQueryRequest) {
         if (aiAvatarQueryRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
@@ -255,16 +252,4 @@ public class AiAvatarController {
         aiAvatarVOPage.setRecords(aiAvatarVOList);
         return ResultUtils.success(aiAvatarVOPage);
     }
-    
-    /**
-     * 获取所有AI分身的简要信息列表
-     * 
-     * @return 所有AI分身的简要信息
-     */
-    @GetMapping("/list/all")
-    public BaseResponse<List<AiAvatarBriefVO>> listAllAiAvatar() {
-        List<AiAvatarBriefVO> aiAvatarBriefList = aiAvatarService.listAllAiAvatarBrief();
-        return ResultUtils.success(aiAvatarBriefList);
-    }
-        
 } 
