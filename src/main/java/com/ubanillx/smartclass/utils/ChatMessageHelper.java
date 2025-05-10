@@ -1,4 +1,4 @@
-package com.ubanillx.smartclass.util;
+package com.ubanillx.smartclass.utils;
 
 import com.ubanillx.smartclass.model.entity.AiAvatarChatHistory;
 import com.ubanillx.smartclass.model.dto.dify.DifyChatResponse;
