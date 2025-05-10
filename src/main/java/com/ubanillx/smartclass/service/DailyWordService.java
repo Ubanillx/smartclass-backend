@@ -1,6 +1,7 @@
 package com.ubanillx.smartclass.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ubanillx.smartclass.model.dto.dailyword.DailyWordQueryRequest;
 import com.ubanillx.smartclass.model.entity.DailyWord;
@@ -87,4 +88,36 @@ public interface DailyWordService extends IService<DailyWord> {
      * @return 随机选择的最新单词
      */
     DailyWordVO getRandomLatestWord();
+    
+    /**
+     * 从ES中搜索每日单词
+     *
+     * @param dailyWordQueryRequest 查询条件
+     * @return 分页结果
+     */
+    Page<DailyWord> searchFromEs(DailyWordQueryRequest dailyWordQueryRequest);
+    
+    /**
+     * 保存每日单词并同步到ES
+     *
+     * @param dailyWord 每日单词
+     * @return 是否成功
+     */
+    boolean saveDailyWord(DailyWord dailyWord);
+    
+    /**
+     * 更新每日单词并同步到ES
+     *
+     * @param dailyWord 每日单词
+     * @return 是否成功
+     */
+    boolean updateDailyWord(DailyWord dailyWord);
+    
+    /**
+     * 删除每日单词并同步到ES
+     *
+     * @param id 每日单词ID
+     * @return 是否成功
+     */
+    boolean deleteDailyWord(Long id);
 }

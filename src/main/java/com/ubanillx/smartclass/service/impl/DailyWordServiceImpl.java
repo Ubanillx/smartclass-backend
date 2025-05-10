@@ -3,10 +3,13 @@ package com.ubanillx.smartclass.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.constant.CommonConstant;
+import com.ubanillx.smartclass.esdao.DailyWordEsDao;
 import com.ubanillx.smartclass.exception.BusinessException;
+import com.ubanillx.smartclass.model.dto.dailyword.DailyWordEsDTO;
 import com.ubanillx.smartclass.model.dto.dailyword.DailyWordQueryRequest;
 import com.ubanillx.smartclass.model.entity.DailyWord;
 import com.ubanillx.smartclass.model.vo.DailyWordVO;
@@ -16,13 +19,26 @@ import com.ubanillx.smartclass.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +50,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord>
     implements DailyWordService{
+
+    @Resource
+    private ElasticsearchRestTemplate elasticsearchRestTemplate;
+    
+    @Resource
+    private DailyWordEsDao dailyWordEsDao;
 
     @Override
     public long addDailyWord(DailyWord dailyWord, Long adminId) {
@@ -179,6 +201,168 @@ public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord
         
         // 返回单词视图对象
         return this.getDailyWordVO(randomWord);
+    }
+
+    @Override
+    public Page<DailyWord> searchFromEs(DailyWordQueryRequest dailyWordQueryRequest) {
+        if (dailyWordQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        
+        Long id = dailyWordQueryRequest.getId();
+        String word = dailyWordQueryRequest.getWord();
+        String translation = dailyWordQueryRequest.getTranslation();
+        Integer difficulty = dailyWordQueryRequest.getDifficulty();
+        String category = dailyWordQueryRequest.getCategory();
+        Date publishDateStart = dailyWordQueryRequest.getPublishDateStart();
+        Date publishDateEnd = dailyWordQueryRequest.getPublishDateEnd();
+        Long adminId = dailyWordQueryRequest.getAdminId();
+        
+        // es 起始页为 0
+        long current = dailyWordQueryRequest.getCurrent() - 1;
+        long pageSize = dailyWordQueryRequest.getPageSize();
+        String sortField = dailyWordQueryRequest.getSortField();
+        String sortOrder = dailyWordQueryRequest.getSortOrder();
+        
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        // 过滤
+        boolQueryBuilder.filter(QueryBuilders.termQuery("isDelete", 0));
+        
+        // 按id查询
+        if (id != null) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("id", id));
+        }
+        
+        // 按管理员id查询
+        if (adminId != null) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("adminId", adminId));
+        }
+        
+        // 按难度查询
+        if (difficulty != null) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("difficulty", difficulty));
+        }
+        
+        // 按分类查询
+        if (StringUtils.isNotBlank(category)) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery("category", category));
+        }
+        
+        // 按发布日期范围查询
+        if (publishDateStart != null) {
+            boolQueryBuilder.filter(QueryBuilders.rangeQuery("publishDate").gte(publishDateStart));
+        }
+        if (publishDateEnd != null) {
+            boolQueryBuilder.filter(QueryBuilders.rangeQuery("publishDate").lte(publishDateEnd));
+        }
+        
+        // 按单词查询
+        if (StringUtils.isNotBlank(word)) {
+            boolQueryBuilder.should(QueryBuilders.matchQuery("word", word));
+            boolQueryBuilder.minimumShouldMatch(1);
+        }
+        
+        // 按翻译查询
+        if (StringUtils.isNotBlank(translation)) {
+            boolQueryBuilder.should(QueryBuilders.matchQuery("translation", translation));
+            boolQueryBuilder.minimumShouldMatch(1);
+        }
+        
+        // 排序
+        SortBuilder<?> sortBuilder = SortBuilders.scoreSort();
+        if (StringUtils.isNotBlank(sortField)) {
+            sortBuilder = SortBuilders.fieldSort(sortField);
+            sortBuilder.order(CommonConstant.SORT_ORDER_ASC.equals(sortOrder) ? SortOrder.ASC : SortOrder.DESC);
+        }
+        
+        // 分页
+        PageRequest pageRequest = PageRequest.of((int) current, (int) pageSize);
+        
+        // 构造查询
+        NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(boolQueryBuilder)
+                .withPageable(pageRequest)
+                .withSorts(sortBuilder)
+                .build();
+        
+        SearchHits<DailyWordEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, DailyWordEsDTO.class);
+        Page<DailyWord> page = new Page<>();
+        page.setTotal(searchHits.getTotalHits());
+        List<DailyWord> resourceList = new ArrayList<>();
+        
+        // 查出结果后，从 db 获取最新数据
+        if (searchHits.hasSearchHits()) {
+            List<SearchHit<DailyWordEsDTO>> searchHitList = searchHits.getSearchHits();
+            List<Long> dailyWordIdList = searchHitList.stream()
+                    .map(searchHit -> searchHit.getContent().getId())
+                    .collect(Collectors.toList());
+            
+            List<DailyWord> dailyWordList = baseMapper.selectBatchIds(dailyWordIdList);
+            if (CollUtil.isNotEmpty(dailyWordList)) {
+                Map<Long, List<DailyWord>> idDailyWordMap = dailyWordList.stream()
+                        .collect(Collectors.groupingBy(DailyWord::getId));
+                
+                dailyWordIdList.forEach(dailyWordId -> {
+                    if (idDailyWordMap.containsKey(dailyWordId)) {
+                        resourceList.add(idDailyWordMap.get(dailyWordId).get(0));
+                    } else {
+                        // 从 ES 清空 DB 已物理删除的数据
+                        String delete = elasticsearchRestTemplate.delete(String.valueOf(dailyWordId), DailyWordEsDTO.class);
+                        log.info("Delete dailyWord {}", delete);
+                    }
+                });
+            }
+        }
+        
+        page.setRecords(resourceList);
+        return page;
+    }
+    
+    @Override
+    public boolean saveDailyWord(DailyWord dailyWord) {
+        boolean result = this.save(dailyWord);
+        if (result) {
+            try {
+                // 同步到ES
+                DailyWordEsDTO dailyWordEsDTO = DailyWordEsDTO.objToDto(dailyWord);
+                dailyWordEsDao.save(dailyWordEsDTO);
+                log.info("同步新增每日单词到ES成功, id={}", dailyWord.getId());
+            } catch (Exception e) {
+                log.error("同步新增每日单词到ES失败", e);
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public boolean updateDailyWord(DailyWord dailyWord) {
+        boolean result = this.updateById(dailyWord);
+        if (result) {
+            try {
+                // 同步到ES
+                DailyWordEsDTO dailyWordEsDTO = DailyWordEsDTO.objToDto(dailyWord);
+                dailyWordEsDao.save(dailyWordEsDTO);
+                log.info("同步更新每日单词到ES成功, id={}", dailyWord.getId());
+            } catch (Exception e) {
+                log.error("同步更新每日单词到ES失败", e);
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public boolean deleteDailyWord(Long id) {
+        boolean result = this.removeById(id);
+        if (result) {
+            try {
+                // 从ES中删除
+                dailyWordEsDao.deleteById(id);
+                log.info("同步删除每日单词到ES成功, id={}", id);
+            } catch (Exception e) {
+                log.error("同步删除每日单词到ES失败", e);
+            }
+        }
+        return result;
     }
 }
 

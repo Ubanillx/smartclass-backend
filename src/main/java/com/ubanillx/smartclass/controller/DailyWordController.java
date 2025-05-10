@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+import com.ubanillx.smartclass.model.dto.dailyword.DailyWordEsDTO;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -41,6 +43,9 @@ public class DailyWordController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
     // region 增删改查
 
@@ -62,8 +67,12 @@ public class DailyWordController {
         BeanUtils.copyProperties(dailyWordAddRequest, dailyWord);
         User loginUser = userService.getLoginUser(request);
         Long adminId = loginUser.getId();
-        long id = dailyWordService.addDailyWord(dailyWord, adminId);
-        return ResultUtils.success(id);
+        // 设置管理员ID
+        dailyWord.setAdminId(adminId);
+        // 使用saveDailyWord方法，同步到ES
+        boolean result = dailyWordService.saveDailyWord(dailyWord);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(dailyWord.getId());
     }
 
     /**
@@ -84,7 +93,8 @@ public class DailyWordController {
         // 判断是否存在
         DailyWord oldDailyWord = dailyWordService.getById(id);
         ThrowUtils.throwIf(oldDailyWord == null, ErrorCode.NOT_FOUND_ERROR);
-        boolean b = dailyWordService.removeById(id);
+        // 使用deleteDailyWord方法，同步删除ES中的数据
+        boolean b = dailyWordService.deleteDailyWord(id);
         return ResultUtils.success(b);
     }
 
@@ -108,7 +118,8 @@ public class DailyWordController {
         long id = dailyWordUpdateRequest.getId();
         DailyWord oldDailyWord = dailyWordService.getById(id);
         ThrowUtils.throwIf(oldDailyWord == null, ErrorCode.NOT_FOUND_ERROR);
-        boolean result = dailyWordService.updateById(dailyWord);
+        // 使用updateDailyWord方法，同步更新ES中的数据
+        boolean result = dailyWordService.updateDailyWord(dailyWord);
         return ResultUtils.success(result);
     }
 
@@ -176,22 +187,6 @@ public class DailyWordController {
     }
 
     /**
-     * 获取特定日期的单词
-     *
-     * @param date 日期 yyyy-MM-dd
-     * @return
-     */
-    @GetMapping("/date")
-    public BaseResponse<List<DailyWordVO>> getDailyWordByDate(
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
-        if (date == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        List<DailyWordVO> dailyWordVOList = dailyWordService.getDailyWordByDate(date);
-        return ResultUtils.success(dailyWordVOList);
-    }
-
-    /**
      * 获取今日单词
      *
      * @return 随机返回一个最新的单词
@@ -216,5 +211,44 @@ public class DailyWordController {
             @RequestParam(required = false) Integer difficulty) {
         DailyWordVO dailyWordVO = dailyWordService.getRandomDailyWord(difficulty);
         return ResultUtils.success(dailyWordVO);
+    }
+
+    /**
+     * 从ES搜索单词
+     *
+     * @param dailyWordQueryRequest
+     * @return
+     */
+    @PostMapping("/search/es")
+    public BaseResponse<Page<DailyWordVO>> searchDailyWord(@RequestBody DailyWordQueryRequest dailyWordQueryRequest) {
+        if (dailyWordQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long size = dailyWordQueryRequest.getPageSize();
+        // 限制爬虫
+        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        Page<DailyWord> dailyWordPage = dailyWordService.searchFromEs(dailyWordQueryRequest);
+        Page<DailyWordVO> dailyWordVOPage = new Page<>(dailyWordPage.getCurrent(), size, dailyWordPage.getTotal());
+        List<DailyWordVO> dailyWordVOList = dailyWordService.getDailyWordVO(dailyWordPage.getRecords());
+        dailyWordVOPage.setRecords(dailyWordVOList);
+        return ResultUtils.success(dailyWordVOPage);
+    }
+    
+    /**
+     * 测试ES索引
+     *
+     * @return
+     */
+    @GetMapping("/es/test")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> testEsIndex() {
+        boolean existsIndex = elasticsearchRestTemplate.indexOps(DailyWordEsDTO.class).exists();
+        if (!existsIndex) {
+            boolean createIndex = elasticsearchRestTemplate.indexOps(DailyWordEsDTO.class).create();
+            if (!createIndex) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建ES索引失败");
+            }
+        }
+        return ResultUtils.success(true);
     }
 } 
