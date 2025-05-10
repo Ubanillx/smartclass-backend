@@ -1,4 +1,4 @@
-package com.ubanillx.smartclass.util;
+package com.ubanillx.smartclass.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
