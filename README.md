@@ -234,3 +234,90 @@ http://localhost:8101/api/doc.html
 
 ![个人资料](doc/我的页面2.jpg)
 ![个人设置](doc/我的页面3.jpg)
+
+## Postman接口调试支持
+
+智慧课堂后端现已支持Postman接口文档和WebSocket调试。
+
+### 功能特点
+
+1. **自动生成Postman Collection**：系统可自动生成包含所有API和WebSocket接口的Postman Collection文件
+2. **WebSocket接口调试**：支持在Postman中测试WebSocket连接和消息收发
+3. **简化的身份验证**：支持通过URL参数传递token进行WebSocket连接认证
+4. **标准化的消息格式**：规范化WebSocket消息格式，便于调试和开发
+
+### 使用方式
+
+1. 启动项目后，访问 `http://<your-server-ip>:12345/api/doc/postman-collection` 下载Postman Collection
+2. 导入Collection到Postman中
+3. 按照指南配置环境变量
+4. 开始测试API和WebSocket接口
+
+更多详细信息，请参考 [Postman调试指南](doc/postman-guide.md)
+
+## SSE实时消息推送功能
+
+本系统使用SSE（Server-Sent Events）技术实现了实时消息推送功能，包括以下特性：
+
+### 主要功能
+1. 实时接收新消息
+2. 实时接收已读状态更新
+3. 实时接收未读消息数量更新
+4. 实时用户在线状态通知
+
+### 接口说明
+- `/chat/connect`: 建立SSE连接，前端使用EventSource订阅此端点
+- `/chat/disconnect`: 关闭SSE连接
+- `/chat/send`: 发送实时聊天消息
+- `/chat/notify`: 发送系统通知（仅管理员可用）
+- `/chat/status`: 获取聊天状态（未读数量、在线状态等）
+
+### 事件类型
+- `chat`: 聊天消息事件
+- `read_status`: 消息已读状态更新事件
+- `unread_count`: 未读消息数量更新事件
+- `user_status`: 用户在线状态更新事件
+- `system`: 系统通知事件
+
+### 前端使用示例
+```javascript
+// 建立SSE连接
+const eventSource = new EventSource('/chat/connect');
+
+// 监听不同类型的事件
+eventSource.addEventListener('chat', function(event) {
+  const message = JSON.parse(event.data);
+  console.log('收到新消息:', message);
+  // 处理新消息
+});
+
+eventSource.addEventListener('read_status', function(event) {
+  const readStatusUpdate = JSON.parse(event.data);
+  console.log('消息已读状态更新:', readStatusUpdate);
+  // 更新消息已读状态
+});
+
+eventSource.addEventListener('unread_count', function(event) {
+  const unreadCountData = JSON.parse(event.data);
+  console.log('未读消息数量更新:', unreadCountData.unreadCount);
+  // 更新未读消息计数显示
+});
+
+eventSource.addEventListener('user_status', function(event) {
+  const userStatusData = JSON.parse(event.data);
+  console.log('用户状态更新:', userStatusData);
+  // 更新用户在线状态
+});
+
+eventSource.addEventListener('system', function(event) {
+  const notification = JSON.parse(event.data);
+  console.log('系统通知:', notification);
+  // 显示系统通知
+});
+
+// 关闭连接（页面卸载前）
+window.addEventListener('beforeunload', function() {
+  fetch('/chat/disconnect', { method: 'POST' });
+  eventSource.close();
+});
+```
