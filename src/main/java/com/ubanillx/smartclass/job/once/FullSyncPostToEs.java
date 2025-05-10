@@ -2,20 +2,21 @@ package com.ubanillx.smartclass.job.once;
 
 import com.ubanillx.smartclass.esdao.PostEsDao;
 import com.ubanillx.smartclass.model.dto.post.PostEsDTO;
-import com.ubanillx.smartclass.model.entity.Post;
 import com.ubanillx.smartclass.service.PostService;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+
+import com.ubanillx.smartclass.model.entity.Post;
 import lombok.extern.slf4j.Slf4j;
 import cn.hutool.core.collection.CollUtil;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
 /**
  * 全量同步帖子到 es
 */
-// todo 取消注释开启任务
-//@Component
+@Component
 @Slf4j
 public class FullSyncPostToEs implements CommandLineRunner {
 
