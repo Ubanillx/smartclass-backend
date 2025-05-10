@@ -29,6 +29,11 @@ public class PostEditRequest implements Serializable {
      * 标签列表
      */
     private List<String> tags;
+    
+    /**
+     * 客户端IP地址
+     */
+    private String clientIp;
 
     private static final long serialVersionUID = 1L;
 }

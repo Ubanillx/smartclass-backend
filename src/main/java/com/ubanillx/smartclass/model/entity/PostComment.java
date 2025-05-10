@@ -9,50 +9,25 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 帖子
- * @TableName post
+ * 帖子评论
+ * @TableName post_comment
  */
-@TableName(value ="post")
+@TableName(value ="post_comment")
 @Data
-public class Post implements Serializable {
+public class PostComment implements Serializable {
     /**
-     * id
+     * 评论ID
      */
     @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
-     * 标题
+     * 帖子ID，关联到post表
      */
-    private String title;
+    private Long postId;
 
     /**
-     * 内容
-     */
-    private String content;
-
-    /**
-     * 标签列表（json 数组）
-     */
-    private String tags;
-
-    /**
-     * 点赞数
-     */
-    private Integer thumbNum;
-
-    /**
-     * 收藏数
-     */
-    private Integer favourNum;
-
-    /**
-     * 评论数
-     */
-    private Integer commentNum;
-
-    /**
-     * 创建用户 id
+     * 评论者ID，关联到user表
      */
     private Long userId;
 
@@ -67,6 +42,11 @@ public class Post implements Serializable {
     private String city;
 
     /**
+     * 评论内容
+     */
+    private String content;
+
+    /**
      * 创建时间
      */
     private Date createTime;
@@ -77,14 +57,9 @@ public class Post implements Serializable {
     private Date updateTime;
 
     /**
-     * 是否删除
+     * 是否删除：0-否，1-是
      */
     private Integer isDelete;
-
-    /**
-     * 帖子类型，如学习/生活/技巧
-     */
-    private String type;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

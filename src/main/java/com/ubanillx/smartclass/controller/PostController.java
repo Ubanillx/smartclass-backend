@@ -14,14 +14,17 @@ import com.ubanillx.smartclass.model.dto.post.PostAddRequest;
 import com.ubanillx.smartclass.model.dto.post.PostEditRequest;
 import com.ubanillx.smartclass.model.dto.post.PostQueryRequest;
 import com.ubanillx.smartclass.model.dto.post.PostUpdateRequest;
-import com.ubanillx.smartclass.model.entity.Post;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.vo.PostVO;
 import com.ubanillx.smartclass.service.PostService;
 import com.ubanillx.smartclass.service.UserService;
+import com.ubanillx.smartclass.utils.GeoIPUtils;
+import com.ubanillx.smartclass.utils.IdGenerator;
 import java.util.List;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
+import com.ubanillx.smartclass.model.entity.Post;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +32,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import com.ubanillx.smartclass.model.dto.post.PostEsDTO;
 
 /**
  * 帖子接口
@@ -43,6 +48,9 @@ public class PostController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
     // region 增删改查
 
@@ -69,7 +77,23 @@ public class PostController {
         post.setUserId(loginUser.getId());
         post.setFavourNum(0);
         post.setThumbNum(0);
-        boolean result = postService.save(post);
+        post.setCommentNum(0);
+        
+        // 使用前端传入的IP地址
+        String ipAddress = postAddRequest.getClientIp();
+        
+        // 根据IP地址获取地理位置信息
+        String[] location = GeoIPUtils.getLocationByIp(ipAddress);
+        post.setCountry(location[0]);
+        post.setCity(location[1]);
+        
+        // 生成8位数字ID
+        String eightDigitId = IdGenerator.generateRandomEightDigitId();
+        // 转换为Long类型
+        Long postId = Long.parseLong(eightDigitId);
+        post.setId(postId);
+        
+        boolean result = postService.savePost(post);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         long newPostId = post.getId();
         return ResultUtils.success(newPostId);
@@ -96,7 +120,7 @@ public class PostController {
         if (!oldPost.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        boolean b = postService.removeById(id);
+        boolean b = postService.deletePost(id);
         return ResultUtils.success(b);
     }
 
@@ -124,7 +148,7 @@ public class PostController {
         // 判断是否存在
         Post oldPost = postService.getById(id);
         ThrowUtils.throwIf(oldPost == null, ErrorCode.NOT_FOUND_ERROR);
-        boolean result = postService.updateById(post);
+        boolean result = postService.updatePost(post);
         return ResultUtils.success(result);
     }
 
@@ -250,11 +274,38 @@ public class PostController {
         Post oldPost = postService.getById(id);
         ThrowUtils.throwIf(oldPost == null, ErrorCode.NOT_FOUND_ERROR);
         // 仅本人或管理员可编辑
-        if (!oldPost.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
+        if (!oldPost.getUserId().equals(loginUser.getId()) && !userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        boolean result = postService.updateById(post);
+        
+        // 使用前端传入的IP地址
+        String ipAddress = postEditRequest.getClientIp();
+        
+        // 根据IP地址获取地理位置信息
+        String[] location = GeoIPUtils.getLocationByIp(ipAddress);
+        post.setCountry(location[0]);
+        post.setCity(location[1]);
+        
+        boolean result = postService.updatePost(post);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 测试ES索引
+     *
+     * @return
+     */
+    @GetMapping("/es/test")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> testEsIndex() {
+        boolean existsIndex = elasticsearchRestTemplate.indexOps(PostEsDTO.class).exists();
+        if (!existsIndex) {
+            boolean createIndex = elasticsearchRestTemplate.indexOps(PostEsDTO.class).create();
+            if (!createIndex) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建ES索引失败");
+            }
+        }
+        return ResultUtils.success(true);
     }
 
 }
