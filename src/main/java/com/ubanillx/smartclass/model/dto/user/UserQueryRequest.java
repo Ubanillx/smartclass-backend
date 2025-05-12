@@ -37,24 +37,9 @@ public class UserQueryRequest extends PageRequest implements Serializable {
     private String userPhone;
 
     /**
-     * 微信开放平台id
-     */
-    private String unionId;
-
-    /**
-     * 公众号openId
-     */
-    private String mpOpenId;
-
-    /**
      * 用户昵称
      */
     private String userName;
-
-    /**
-     * 用户简介
-     */
-    private String userProfile;
 
 
     /**
@@ -75,13 +60,7 @@ public class UserQueryRequest extends PageRequest implements Serializable {
     /**
      * 用户生日
      */
-    private Date birthday;
-
-
-    /**
-     * 创建时间
-     */
-    private Date createTime;
+    private int birthdayYear;
 
 
     private static final long serialVersionUID = 1L;

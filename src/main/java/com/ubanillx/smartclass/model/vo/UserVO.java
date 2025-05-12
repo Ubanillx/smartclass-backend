@@ -14,10 +14,6 @@ public class UserVO implements Serializable {
      * id
      */
     private Long id;
-    /**
-     * 用户手机号
-     */
-    private String userPhone;
 
     /**
      * 用户昵称
@@ -35,7 +31,7 @@ public class UserVO implements Serializable {
     private String userProfile;
 
     /**
-     * 用户角色：user/admin/ban
+     * 用户角色：student/admin/teacher/ban
      */
     private String userRole;
 
@@ -54,15 +50,12 @@ public class UserVO implements Serializable {
      */
     private String city;
 
-    /**
-     * 用户所在区县
-     */
-    private String district;
 
     /**
      * 用户生日
      */
-    private Date birthday;
+    private int birthdayYear;
 
     private static final long serialVersionUID = 1L;
+
 }
