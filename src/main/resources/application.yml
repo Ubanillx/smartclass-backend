@@ -85,10 +85,10 @@ wx:
 # todo 需替换配置
 cos:
   client:
-    accessKey: AKID48zeCcu44wnS9nJqCLH1Zu1ENLBpHsQr
-    secretKey: XxOva6RaYXQAi8PYYUGsLdkePyMbgbLr
-    region: ap-nanjing
-    bucket: smart-class-1329220530
+    accessKey: 
+    secretKey: 
+    region: 
+    bucket: 
     # 文件上传配置
     upload:
       # 最大上传大小配置（单位：MB）
