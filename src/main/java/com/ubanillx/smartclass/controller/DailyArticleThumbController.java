@@ -37,14 +37,14 @@ public class DailyArticleThumbController {
     private UserService userService;
 
     /**
-     * 点赞/取消点赞文章
+     * 点赞文章
      *
      * @param articleId 文章ID
      * @param request HTTP请求对象，用于获取当前登录用户信息
-     * @return 1-点赞成功；-1-取消点赞成功；0-操作失败
+     * @return 1-点赞成功；0-操作失败
      */
     @PostMapping("/do/{articleId}")
-    public BaseResponse<Integer> doArticleThumb(@PathVariable("articleId") long articleId,
+    public BaseResponse<Integer> thumbArticle(@PathVariable("articleId") long articleId,
                                                HttpServletRequest request) {
         if (articleId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -52,7 +52,7 @@ public class DailyArticleThumbController {
         // 获取登录用户
         User loginUser = userService.getLoginUser(request);
         // 执行点赞操作
-        int result = dailyArticleThumbService.doArticleThumb(articleId, loginUser);
+        int result = dailyArticleThumbService.thumbArticle(articleId, loginUser);
         return ResultUtils.success(result);
     }
     
