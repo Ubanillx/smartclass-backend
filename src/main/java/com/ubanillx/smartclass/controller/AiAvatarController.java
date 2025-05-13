@@ -239,7 +239,7 @@ public class AiAvatarController {
         }
         
         QueryWrapper<AiAvatar> queryWrapper = new QueryWrapper<>(aiAvatarQuery);
-        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals("ascend"), sortField);
+        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), "ascend".equals(sortOrder), sortField);
         Page<AiAvatar> aiAvatarPage = aiAvatarService.page(new Page<>(current, size), queryWrapper);
         
         // 转换为VO
