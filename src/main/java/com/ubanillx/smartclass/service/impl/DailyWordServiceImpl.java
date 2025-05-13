@@ -204,76 +204,33 @@ public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord
     }
 
     @Override
-    public Page<DailyWord> searchFromEs(DailyWordQueryRequest dailyWordQueryRequest) {
-        if (dailyWordQueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+    public Page<DailyWord> searchFromEs(String searchText) {
+        if (StringUtils.isBlank(searchText)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "搜索关键词为空");
         }
         
-        Long id = dailyWordQueryRequest.getId();
-        String word = dailyWordQueryRequest.getWord();
-        String translation = dailyWordQueryRequest.getTranslation();
-        Integer difficulty = dailyWordQueryRequest.getDifficulty();
-        String category = dailyWordQueryRequest.getCategory();
-        Date publishDateStart = dailyWordQueryRequest.getPublishDateStart();
-        Date publishDateEnd = dailyWordQueryRequest.getPublishDateEnd();
-        Long adminId = dailyWordQueryRequest.getAdminId();
+        // 设置默认分页参数
+        long current = 0; // ES分页从0开始
+        long pageSize = 10;
         
-        // es 起始页为 0
-        long current = dailyWordQueryRequest.getCurrent() - 1;
-        long pageSize = dailyWordQueryRequest.getPageSize();
-        String sortField = dailyWordQueryRequest.getSortField();
-        String sortOrder = dailyWordQueryRequest.getSortOrder();
-        
+        // 创建多字段匹配查询
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        // 过滤
+        
+        // 只查询未删除的单词
         boolQueryBuilder.filter(QueryBuilders.termQuery("isDelete", 0));
         
-        // 按id查询
-        if (id != null) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("id", id));
-        }
+        // 创建多字段匹配查询
+        boolQueryBuilder.must(QueryBuilders.multiMatchQuery(searchText)
+                .field("word", 3.0f)             // 单词匹配权重最高
+                .field("translation", 2.0f)      // 翻译权重较高
+                .field("example", 1.0f)          // 例句权重普通
+                .field("exampleTranslation", 1.0f) // 例句翻译权重普通
+                .field("notes", 1.5f)            // 笔记权重中等
+                .field("category", 1.5f)         // 分类权重中等
+                .type("best_fields"));           // 使用最佳字段匹配策略
         
-        // 按管理员id查询
-        if (adminId != null) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("adminId", adminId));
-        }
-        
-        // 按难度查询
-        if (difficulty != null) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("difficulty", difficulty));
-        }
-        
-        // 按分类查询
-        if (StringUtils.isNotBlank(category)) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("category", category));
-        }
-        
-        // 按发布日期范围查询
-        if (publishDateStart != null) {
-            boolQueryBuilder.filter(QueryBuilders.rangeQuery("publishDate").gte(publishDateStart));
-        }
-        if (publishDateEnd != null) {
-            boolQueryBuilder.filter(QueryBuilders.rangeQuery("publishDate").lte(publishDateEnd));
-        }
-        
-        // 按单词查询
-        if (StringUtils.isNotBlank(word)) {
-            boolQueryBuilder.should(QueryBuilders.matchQuery("word", word));
-            boolQueryBuilder.minimumShouldMatch(1);
-        }
-        
-        // 按翻译查询
-        if (StringUtils.isNotBlank(translation)) {
-            boolQueryBuilder.should(QueryBuilders.matchQuery("translation", translation));
-            boolQueryBuilder.minimumShouldMatch(1);
-        }
-        
-        // 排序
+        // 默认按相关度排序
         SortBuilder<?> sortBuilder = SortBuilders.scoreSort();
-        if (StringUtils.isNotBlank(sortField)) {
-            sortBuilder = SortBuilders.fieldSort(sortField);
-            sortBuilder.order(CommonConstant.SORT_ORDER_ASC.equals(sortOrder) ? SortOrder.ASC : SortOrder.DESC);
-        }
         
         // 分页
         PageRequest pageRequest = PageRequest.of((int) current, (int) pageSize);
@@ -285,8 +242,11 @@ public class DailyWordServiceImpl extends ServiceImpl<DailyWordMapper, DailyWord
                 .withSorts(sortBuilder)
                 .build();
         
+        // 执行搜索
         SearchHits<DailyWordEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, DailyWordEsDTO.class);
-        Page<DailyWord> page = new Page<>();
+        
+        // 处理结果
+        Page<DailyWord> page = new Page<>(current + 1, pageSize); // 转换回以1开始的页码
         page.setTotal(searchHits.getTotalHits());
         List<DailyWord> resourceList = new ArrayList<>();
         

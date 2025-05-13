@@ -92,10 +92,10 @@ public interface DailyWordService extends IService<DailyWord> {
     /**
      * 从ES中搜索每日单词
      *
-     * @param dailyWordQueryRequest 查询条件
+     * @param searchText 搜索关键词，将在单词、翻译、例句等字段中进行匹配
      * @return 分页结果
      */
-    Page<DailyWord> searchFromEs(DailyWordQueryRequest dailyWordQueryRequest);
+    Page<DailyWord> searchFromEs(String searchText);
     
     /**
      * 保存每日单词并同步到ES

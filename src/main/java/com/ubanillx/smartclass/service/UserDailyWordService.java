@@ -45,4 +45,4 @@ public interface UserDailyWordService extends IService<UserDailyWord> {
      * @return
      */
     UserDailyWord getUserDailyWord(long wordId, long userId);
-}
+} 

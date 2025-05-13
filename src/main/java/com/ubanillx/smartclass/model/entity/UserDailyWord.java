@@ -52,16 +52,6 @@ public class UserDailyWord implements Serializable {
     private Date studyTime;
 
     /**
-     * 是否收藏：0-否，1-是
-     */
-    private Integer isCollected;
-
-    /**
-     * 收藏时间
-     */
-    private Date collectTime;
-
-    /**
      * 笔记内容
      */
     private String noteContent;
@@ -88,4 +78,4 @@ public class UserDailyWord implements Serializable {
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
-}
+} 

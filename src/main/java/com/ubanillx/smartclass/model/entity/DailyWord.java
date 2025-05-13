@@ -62,7 +62,7 @@ public class DailyWord implements Serializable {
     private String category;
 
     /**
-     * 单词笔记或补充说明
+     * 单词笔记
      */
     private String notes;
 
