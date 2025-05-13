@@ -118,54 +118,8 @@ public class AiAvatarController {
             return ResultUtils.error(ErrorCode.NO_AUTH_ERROR);
         }
         
-        // 复制非空字段，实现增量更新
-        AiAvatar aiAvatar = new AiAvatar();
-        aiAvatar.setId(id); // 设置ID
-        
-        // 增量更新每个字段，只有非null值才会被更新
-        if (aiAvatarUpdateRequest.getName() != null) {
-            aiAvatar.setName(aiAvatarUpdateRequest.getName());
-        }
-        
-        if (aiAvatarUpdateRequest.getBaseUrl() != null) {
-            aiAvatar.setBaseUrl(aiAvatarUpdateRequest.getBaseUrl());
-        }
-        
-        if (aiAvatarUpdateRequest.getDescription() != null) {
-            aiAvatar.setDescription(aiAvatarUpdateRequest.getDescription());
-        }
-        
-        if (aiAvatarUpdateRequest.getAvatarImgUrl() != null) {
-            aiAvatar.setAvatarImgUrl(aiAvatarUpdateRequest.getAvatarImgUrl());
-        }
-        
-        if (aiAvatarUpdateRequest.getAvatarAuth() != null) {
-            aiAvatar.setAvatarAuth(aiAvatarUpdateRequest.getAvatarAuth());
-        }
-        
-        if (aiAvatarUpdateRequest.getTags() != null) {
-            aiAvatar.setTags(aiAvatarUpdateRequest.getTags());
-        }
-        
-        if (aiAvatarUpdateRequest.getPersonality() != null) {
-            aiAvatar.setPersonality(aiAvatarUpdateRequest.getPersonality());
-        }
-        
-        if (aiAvatarUpdateRequest.getAbilities() != null) {
-            aiAvatar.setAbilities(aiAvatarUpdateRequest.getAbilities());
-        }
-        
-        if (aiAvatarUpdateRequest.getIsPublic() != null) {
-            aiAvatar.setIsPublic(aiAvatarUpdateRequest.getIsPublic());
-        }
-        
-        if (aiAvatarUpdateRequest.getStatus() != null) {
-            aiAvatar.setStatus(aiAvatarUpdateRequest.getStatus());
-        }
-        
-        if (aiAvatarUpdateRequest.getSort() != null) {
-            aiAvatar.setSort(aiAvatarUpdateRequest.getSort());
-        }
+        // 交给service层处理增量更新字段转换
+        AiAvatar aiAvatar = aiAvatarService.createUpdateEntity(aiAvatarUpdateRequest);
         
         boolean result = aiAvatarService.updateById(aiAvatar);
         return ResultUtils.success(result);

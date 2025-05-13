@@ -3,6 +3,7 @@ package com.ubanillx.smartclass.service;
 import com.ubanillx.smartclass.model.entity.AiAvatar;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ubanillx.smartclass.model.vo.AiAvatarBriefVO;
+import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarUpdateRequest;
 
 import java.util.List;
 
@@ -19,4 +20,12 @@ public interface AiAvatarService extends IService<AiAvatar> {
      * @return AI分身简要信息列表
      */
     List<AiAvatarBriefVO> listAllAiAvatarBrief();
+    
+    /**
+     * 从更新请求创建增量更新的AI分身实体
+     * 
+     * @param updateRequest 更新请求
+     * @return 更新的AI分身实体
+     */
+    AiAvatar createUpdateEntity(AiAvatarUpdateRequest updateRequest);
 }
