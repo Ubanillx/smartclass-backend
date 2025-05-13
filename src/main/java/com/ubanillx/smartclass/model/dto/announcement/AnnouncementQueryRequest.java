@@ -62,6 +62,11 @@ public class AnnouncementQueryRequest extends PageRequest implements Serializabl
      * 创建时间
      */
     private Date createTime;
+    
+    /**
+     * 是否只查询有效公告（未删除、已发布、在有效期内的公告）
+     */
+    private Boolean isValid;
 
     private static final long serialVersionUID = 1L;
 }

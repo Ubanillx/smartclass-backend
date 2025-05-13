@@ -79,6 +79,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         String coverImage = announcementQueryRequest.getCoverImage();
         Long adminId = announcementQueryRequest.getAdminId();
         Date createTime = announcementQueryRequest.getCreateTime();
+        Boolean isValid = announcementQueryRequest.getIsValid();
         String sortField = announcementQueryRequest.getSortField();
         String sortOrder = announcementQueryRequest.getSortOrder();
 
@@ -87,16 +88,27 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         queryWrapper.like(StringUtils.isNotBlank(title), "title", title);
         queryWrapper.like(StringUtils.isNotBlank(content), "content", content);
         queryWrapper.eq(priority != null, "priority", priority);
-        queryWrapper.eq(status != null, "status", status);
-        queryWrapper.ge(startTime != null, "startTime", startTime);
-        queryWrapper.le(endTime != null, "endTime", endTime);
+        queryWrapper.eq(status != null && !Boolean.TRUE.equals(isValid), "status", status);
+        queryWrapper.ge(startTime != null && !Boolean.TRUE.equals(isValid), "startTime", startTime);
+        queryWrapper.le(endTime != null && !Boolean.TRUE.equals(isValid), "endTime", endTime);
         queryWrapper.like(StringUtils.isNotBlank(coverImage), "coverImage", coverImage);
         queryWrapper.eq(adminId != null, "adminId", adminId);
         queryWrapper.eq(createTime != null, "createTime", createTime);
         queryWrapper.eq("isDelete", 0);
-        queryWrapper.orderBy(SqlUtils.validSortField(sortField),
-                sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
-                sortField);
+        
+        // 如果isValid为true，添加有效公告的查询条件
+        if (Boolean.TRUE.equals(isValid)) {
+            queryWrapper.eq("status", 1); // 已发布状态
+            queryWrapper.le("startTime", new Date()); // 开始时间小于等于当前时间
+            queryWrapper.ge("endTime", new Date()); // 结束时间大于等于当前时间
+            // 按优先级和创建时间降序排序
+            queryWrapper.orderByDesc("priority", "createTime");
+        } else {
+            queryWrapper.orderBy(SqlUtils.validSortField(sortField),
+                    sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
+                    sortField);
+        }
+        
         return queryWrapper;
     }
 
