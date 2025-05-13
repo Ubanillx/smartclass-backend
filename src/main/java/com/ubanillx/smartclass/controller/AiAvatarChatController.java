@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ubanillx.smartclass.common.BaseResponse;
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.common.ResultUtils;
+import com.ubanillx.smartclass.exception.BusinessException;
+import com.ubanillx.smartclass.exception.ThrowUtils;
 import com.ubanillx.smartclass.model.dto.chat.ChatMessageAddRequest;
 import com.ubanillx.smartclass.model.dto.chat.ChatSessionUpdateRequest;
 import com.ubanillx.smartclass.model.dto.chat.StopStreamingRequest;
@@ -26,7 +28,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -85,88 +86,30 @@ public class AiAvatarChatController {
      */
     @PostMapping("/message/send")
     public BaseResponse<ChatMessageVO> sendMessage(@RequestBody ChatMessageAddRequest chatMessageAddRequest, HttpServletRequest request) {
-        if (chatMessageAddRequest == null || StringUtils.isBlank(chatMessageAddRequest.getContent())) {
-            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
-        }
-        
-        Long aiAvatarId = chatMessageAddRequest.getAiAvatarId();
-        if (aiAvatarId == null || aiAvatarId <= 0) {
-            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "AI分身ID不能为空");
+        // 参数校验
+        if (chatMessageAddRequest == null || StringUtils.isBlank(chatMessageAddRequest.getContent()) 
+                || chatMessageAddRequest.getAiAvatarId() == null || chatMessageAddRequest.getAiAvatarId() <= 0) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "参数错误或AI分身ID不能为空");
         }
         
         User loginUser = userService.getLoginUser(request);
         
-        // 获取或创建会话ID
-        String sessionId = chatMessageAddRequest.getSessionId();
-        if (StringUtils.isBlank(sessionId)) {
-            // 直接创建新会话
-            sessionId = aiAvatarChatHistoryService.createNewSession(loginUser.getId(), aiAvatarId);
-            log.info("创建新会话: {}", sessionId);
-        }
-        
         try {
-            // 获取AI分身信息
-            AiAvatar aiAvatar = aiAvatarService.getById(aiAvatarId);
-            if (aiAvatar == null) {
-                return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "AI分身不存在");
-            }
-            
-            String baseUrl = aiAvatar.getBaseUrl();
-            if (StringUtils.isBlank(baseUrl)) {
-                return ResultUtils.error(ErrorCode.OPERATION_ERROR, "AI分身API地址不存在");
-            }
-            
-            String avatarAuth = aiAvatar.getAvatarAuth();
-            if (StringUtils.isBlank(avatarAuth)) {
-                return ResultUtils.error(ErrorCode.OPERATION_ERROR, "AI分身鉴权信息不存在");
-            }
-            
-            // 使用DifyService发送消息
-            AiAvatarChatHistory result = difyService.sendChatMessage(
+            // 调用服务层处理消息发送
+            ChatMessageVO chatMessageVO = difyService.handleSendMessageRequest(
                     loginUser.getId(),
-                    aiAvatarId,
-                    sessionId,
+                    chatMessageAddRequest.getAiAvatarId(),
+                    chatMessageAddRequest.getSessionId(),
                     chatMessageAddRequest.getContent(),
-                    baseUrl,
-                    avatarAuth
+                    chatMessageAddRequest.isEndChat(),
+                    aiAvatarChatHistoryService,
+                    aiAvatarService,
+                    userService
             );
-            
-            // 将结果转换为VO对象
-            ChatMessageVO chatMessageVO = new ChatMessageVO();
-            BeanUtils.copyProperties(result, chatMessageVO);
-            
-            // 填充额外信息
-            chatMessageVO.setAiAvatarName(aiAvatar.getName());
-            chatMessageVO.setAiAvatarImgUrl(aiAvatar.getAvatarImgUrl());
-            
-            // 获取用户信息
-            User user = userService.getById(loginUser.getId());
-            if (user != null) {
-                chatMessageVO.setUserName(user.getUserName());
-                chatMessageVO.setUserAvatar(user.getUserAvatar());
-            }
-            
-            // 检查是否需要更新会话总结
-            if (chatMessageAddRequest.isEndChat()) {
-                // 异步获取会话总结并更新
-                final String finalSessionId = sessionId;
-                final String finalBaseUrl = baseUrl;
-                final String finalAvatarAuth = avatarAuth;
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        // 调用Dify API获取会话总结
-                        String summary = difyService.getSessionSummary(finalSessionId, finalBaseUrl, finalAvatarAuth);
-                        // 更新会话总结
-                        aiAvatarChatHistoryService.updateSessionSummary(finalSessionId, summary);
-                    } catch (Exception e) {
-                        log.error("获取会话总结失败", e);
-                    }
-                });
-            }
             
             return ResultUtils.success(chatMessageVO);
         } catch (Exception e) {
-            log.error("Error sending message", e);
+            log.error("发送消息失败", e);
             return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "发送消息失败: " + e.getMessage());
         }
     }
@@ -181,187 +124,28 @@ public class AiAvatarChatController {
     @PostMapping("/message/stream")
     public SseEmitter sendMessageStream(@RequestBody ChatMessageAddRequest chatMessageAddRequest, 
                                      HttpServletRequest request) {
-        if (chatMessageAddRequest == null || StringUtils.isBlank(chatMessageAddRequest.getContent())) {
-            throw new RuntimeException("请求参数错误");
-        }
-        
-        Long aiAvatarId = chatMessageAddRequest.getAiAvatarId();
-        if (aiAvatarId == null || aiAvatarId <= 0) {
-            throw new RuntimeException("AI分身ID不能为空");
-        }
+        // 参数校验
+        ThrowUtils.throwIf(chatMessageAddRequest == null 
+                || StringUtils.isBlank(chatMessageAddRequest.getContent())
+                || chatMessageAddRequest.getAiAvatarId() == null 
+                || chatMessageAddRequest.getAiAvatarId() <= 0,
+                ErrorCode.PARAMS_ERROR, "请求参数不完整");
         
         User loginUser = userService.getLoginUser(request);
         
-        // 获取或创建会话ID
-        String sessionId = chatMessageAddRequest.getSessionId();
-        if (StringUtils.isBlank(sessionId)) {
-            sessionId = aiAvatarChatHistoryService.createNewSession(loginUser.getId(), aiAvatarId);
-            log.info("创建新会话: {}", sessionId);
-        }
-        
-        // 创建SseEmitter，超时设置为5分钟
-        final SseEmitter emitter = new SseEmitter(300000L);
-        
         try {
-            // 获取AI分身信息
-            AiAvatar aiAvatar = aiAvatarService.getById(aiAvatarId);
-            if (aiAvatar == null) {
-                throw new RuntimeException("AI分身不存在");
-            }
-            
-            String baseUrl = aiAvatar.getBaseUrl();
-            if (StringUtils.isBlank(baseUrl)) {
-                throw new RuntimeException("AI分身API地址不存在");
-            }
-            
-            String avatarAuth = aiAvatar.getAvatarAuth();
-            if (StringUtils.isBlank(avatarAuth)) {
-                throw new RuntimeException("AI分身鉴权信息不存在");
-            }
-            
-            // 在SSE连接建立后立即发送一个初始事件，确保连接稳定
-            try {
-                SseEmitter.SseEventBuilder initialEvent = SseEmitter.event()
-                    .data("{\"event\":\"connected\",\"message\":\"SSE连接已建立\"}")
-                    .id("connect-" + System.currentTimeMillis())
-                    .name("connect");
-                emitter.send(initialEvent);
-            } catch (Exception e) {
-                log.warn("发送初始连接事件失败，客户端可能已断开", e);
-                try {
-                    emitter.complete();
-                } catch (Exception ex) {
-                    log.debug("关闭emitter时出错", ex);
-                }
-                return emitter;
-            }
-            
-            // 使用异步处理
-            final String finalSessionId = sessionId;
-            CompletableFuture.runAsync(() -> {
-                try {
-                    // 使用DifyService发送流式消息
-                    difyService.sendChatMessageStreaming(
-                            loginUser.getId(),
-                            aiAvatarId,
-                            finalSessionId,
-                            chatMessageAddRequest.getContent(),
-                            baseUrl,
-                            avatarAuth,
-                            new DifyService.DifyStreamCallback() {
-                                @Override
-                                public void onMessage(String chunk) {
-                                    try {
-                                        // 直接将接收到的每个数据块原样发送给客户端
-                                        // 包装为SSE事件格式
-                                        SseEmitter.SseEventBuilder event = SseEmitter.event()
-                                            .data(chunk)
-                                            .id(String.valueOf(System.currentTimeMillis()))
-                                            .name("message");
-                                        
-                                        // 立即发送数据块到前端，不等待累积
-                                        emitter.send(event);
-                                    } catch (Exception e) {
-                                        // 错误发生时安全地完成emitter
-                                        safeCompleteEmitter(emitter, e);
-                                    }
-                                }
-                                
-                                @Override
-                                public void onComplete(String fullResponse) {
-                                    try {
-                                        // 发送完成事件
-                                        SseEmitter.SseEventBuilder event = SseEmitter.event()
-                                            .data("{\"event\":\"complete\",\"message\":\"流式响应已完成\"}")
-                                            .id("complete-" + System.currentTimeMillis())
-                                            .name("complete");
-                                        emitter.send(event);
-                                        
-                                        // 完成SSE流
-                                        safeCompleteEmitter(emitter, null);
-                                    } catch (Exception e) {
-                                        safeCompleteEmitter(emitter, e);
-                                    }
-                                }
-                                
-                                @Override
-                                public void onError(Throwable error) {
-                                    try {
-                                        // 发送错误事件
-                                        SseEmitter.SseEventBuilder event = SseEmitter.event()
-                                            .data("{\"event\":\"error\",\"message\":\"" + error.getMessage() + "\"}")
-                                            .id("error-" + System.currentTimeMillis())
-                                            .name("error");
-                                        emitter.send(event);
-                                        
-                                        // 以错误结束SSE流
-                                        safeCompleteEmitter(emitter, error);
-                                    } catch (Exception e) {
-                                        safeCompleteEmitter(emitter, error);
-                                    }
-                                }
-                            }
-                    );
-                } catch (Exception e) {
-                    log.error("流式聊天过程中出错: {}", e.getMessage());
-                    try {
-                        // 发送错误事件
-                        SseEmitter.SseEventBuilder event = SseEmitter.event()
-                            .data("{\"event\":\"error\",\"message\":\"" + e.getMessage() + "\"}")
-                            .id("error-" + System.currentTimeMillis())
-                            .name("error");
-                        emitter.send(event);
-                        
-                        safeCompleteEmitter(emitter, e);
-                    } catch (Exception ex) {
-                        log.debug("发送错误事件失败，客户端可能已断开: {}", ex.getMessage());
-                        safeCompleteEmitter(emitter, e);
-                    }
-                }
-            });
-            
-            // 添加超时和完成时的回调
-            emitter.onTimeout(() -> {
-                try {
-                    SseEmitter.SseEventBuilder event = SseEmitter.event()
-                        .data("{\"event\":\"timeout\",\"message\":\"连接超时\"}")
-                        .id("timeout-" + System.currentTimeMillis())
-                        .name("timeout");
-                    emitter.send(event);
-                } catch (Exception e) {
-                    // 忽略异常
-                }
-            });
-            
-            emitter.onCompletion(() -> {
-                // 移除日志打印
-            });
-            
-            emitter.onError(error -> {
-                // 移除日志打印
-            });
-            
+            // 调用服务层处理流式消息
+            return difyService.handleStreamMessageRequest(
+                    loginUser.getId(), 
+                    chatMessageAddRequest.getAiAvatarId(), 
+                    chatMessageAddRequest.getSessionId(), 
+                    chatMessageAddRequest.getContent(),
+                    aiAvatarChatHistoryService,
+                    aiAvatarService
+            );
         } catch (Exception e) {
-            log.error("设置流式聊天时出错: {}", e.getMessage());
-            safeCompleteEmitter(emitter, e);
-        }
-        
-        return emitter;
-    }
-    
-    /**
-     * 安全地完成SseEmitter，避免重复完成导致的异常
-     */
-    private void safeCompleteEmitter(SseEmitter emitter, Throwable error) {
-        try {
-            if (error != null) {
-                emitter.completeWithError(error);
-            } else {
-                emitter.complete();
-            }
-        } catch (Exception e) {
-            // 通常这意味着emitter已经被完成或关闭了
-            // 移除日志打印
+            log.error("流式聊天请求处理失败: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "流式聊天请求处理失败: " + e.getMessage());
         }
     }
     
@@ -516,49 +300,31 @@ public class AiAvatarChatController {
     @PostMapping("/message/stop")
     public BaseResponse<Boolean> stopStreamingResponse(@RequestBody StopStreamingRequest stopStreamingRequest, 
                                                     HttpServletRequest request) {
-        Long aiAvatarId = stopStreamingRequest.getAiAvatarId();
-        String taskId = stopStreamingRequest.getTaskId();
-        
-        if (aiAvatarId == null || aiAvatarId <= 0) {
-            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "AI分身ID不能为空");
-        }
-        
-        if (StringUtils.isBlank(taskId)) {
-            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "任务ID不能为空");
+        // 参数校验
+        if (stopStreamingRequest == null || stopStreamingRequest.getAiAvatarId() == null || stopStreamingRequest.getAiAvatarId() <= 0
+                || StringUtils.isBlank(stopStreamingRequest.getTaskId())) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "请求参数不完整");
         }
         
         User loginUser = userService.getLoginUser(request);
         
         try {
             // 获取AI分身信息
-            AiAvatar aiAvatar = aiAvatarService.getById(aiAvatarId);
-            if (aiAvatar == null) {
-                return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "AI分身不存在");
-            }
-            
-            String baseUrl = aiAvatar.getBaseUrl();
-            if (StringUtils.isBlank(baseUrl)) {
-                return ResultUtils.error(ErrorCode.OPERATION_ERROR, "AI分身API地址不存在");
-            }
-            
-            String avatarAuth = aiAvatar.getAvatarAuth();
-            if (StringUtils.isBlank(avatarAuth)) {
-                return ResultUtils.error(ErrorCode.OPERATION_ERROR, "AI分身鉴权信息不存在");
+            AiAvatar aiAvatar = aiAvatarService.getById(stopStreamingRequest.getAiAvatarId());
+            if (aiAvatar == null || StringUtils.isAnyBlank(aiAvatar.getBaseUrl(), aiAvatar.getAvatarAuth())) {
+                return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "AI分身不存在或配置不完整");
             }
             
             // 调用服务停止流式响应
             boolean result = difyService.stopStreamingResponse(
                     loginUser.getId(),
-                    taskId,
-                    baseUrl,
-                    avatarAuth
+                    stopStreamingRequest.getTaskId(),
+                    aiAvatar.getBaseUrl(),
+                    aiAvatar.getAvatarAuth()
             );
             
-            if (!result) {
-                return ResultUtils.error(ErrorCode.OPERATION_ERROR, "停止流式响应失败");
-            }
-            
-            return ResultUtils.success(true);
+            return result ? ResultUtils.success(true) 
+                          : ResultUtils.error(ErrorCode.OPERATION_ERROR, "停止流式响应失败");
         } catch (Exception e) {
             log.error("停止流式响应异常", e);
             return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "停止流式响应异常: " + e.getMessage());

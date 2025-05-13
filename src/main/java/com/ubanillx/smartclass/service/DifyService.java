@@ -1,6 +1,8 @@
 package com.ubanillx.smartclass.service;
 
 import com.ubanillx.smartclass.model.entity.AiAvatarChatHistory;
+import com.ubanillx.smartclass.model.vo.ChatMessageVO;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.InputStream;
@@ -39,6 +41,37 @@ public interface DifyService {
      */
     AiAvatarChatHistory sendChatMessageStreaming(Long userId, Long aiAvatarId, String sessionId, String content, 
                                                String baseUrl, String avatarAuth, DifyStreamCallback callback);
+    
+    /**
+     * 处理常规消息发送请求的完整业务逻辑
+     *
+     * @param userId                用户ID
+     * @param aiAvatarId            AI分身ID
+     * @param sessionId             会话ID
+     * @param content               消息内容
+     * @param endChat               是否结束聊天
+     * @param chatHistoryService    聊天历史服务
+     * @param aiAvatarService       AI分身服务
+     * @param userService           用户服务
+     * @return                      处理结果
+     */
+    ChatMessageVO handleSendMessageRequest(Long userId, Long aiAvatarId, String sessionId, String content, 
+                                         boolean endChat, AiAvatarChatHistoryService chatHistoryService, 
+                                         AiAvatarService aiAvatarService, UserService userService);
+    
+    /**
+     * 处理流式消息发送请求的完整业务逻辑
+     *
+     * @param userId                用户ID
+     * @param aiAvatarId            AI分身ID
+     * @param sessionId             会话ID
+     * @param content               消息内容
+     * @param chatHistoryService    聊天历史服务
+     * @param aiAvatarService       AI分身服务
+     * @return                      SSE事件发射器
+     */
+    SseEmitter handleStreamMessageRequest(Long userId, Long aiAvatarId, String sessionId, String content,
+                                        AiAvatarChatHistoryService chatHistoryService, AiAvatarService aiAvatarService);
     
     /**
      * 获取会话总结
