@@ -20,14 +20,10 @@ import com.ubanillx.smartclass.service.DailyArticleService;
 import com.ubanillx.smartclass.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
-import com.ubanillx.smartclass.model.dto.dailyarticle.DailyArticleEsDTO;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -44,17 +40,15 @@ public class DailyArticleController {
     @Resource
     private UserService userService;
 
-    @Resource
-    private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
     // region 增删改查
 
     /**
      * 创建每日文章（仅管理员）
      *
-     * @param dailyArticleAddRequest
-     * @param request
-     * @return
+     * @param dailyArticleAddRequest 每日文章创建请求体，包含文章标题、内容、类型等信息
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 新创建的每日文章ID
      */
     @PostMapping("/add")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -78,14 +72,12 @@ public class DailyArticleController {
     /**
      * 删除每日文章（仅管理员）
      *
-     * @param deleteRequest
-     * @param request
-     * @return
+     * @param deleteRequest 删除请求体，包含要删除的文章ID
+     * @return 删除操作是否成功
      */
     @PostMapping("/delete")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> deleteDailyArticle(@RequestBody DeleteRequest deleteRequest,
-                                              HttpServletRequest request) {
+    public BaseResponse<Boolean> deleteDailyArticle(@RequestBody DeleteRequest deleteRequest) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -101,14 +93,12 @@ public class DailyArticleController {
     /**
      * 更新每日文章（仅管理员）
      *
-     * @param dailyArticleUpdateRequest
-     * @param request
-     * @return
+     * @param dailyArticleUpdateRequest 文章更新请求体，包含文章ID和需要更新的字段
+     * @return 更新操作是否成功
      */
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updateDailyArticle(@RequestBody DailyArticleUpdateRequest dailyArticleUpdateRequest,
-                                              HttpServletRequest request) {
+    public BaseResponse<Boolean> updateDailyArticle(@RequestBody DailyArticleUpdateRequest dailyArticleUpdateRequest) {
         if (dailyArticleUpdateRequest == null || dailyArticleUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -126,8 +116,8 @@ public class DailyArticleController {
     /**
      * 根据 id 获取每日文章
      *
-     * @param id
-     * @return
+     * @param id 文章ID
+     * @return 文章视图对象，包含文章详细信息
      */
     @GetMapping("/get/vo")
     public BaseResponse<DailyArticleVO> getDailyArticleVOById(long id) {
@@ -147,8 +137,8 @@ public class DailyArticleController {
     /**
      * 分页获取文章列表（仅管理员）
      *
-     * @param dailyArticleQueryRequest
-     * @return
+     * @param dailyArticleQueryRequest 查询请求参数，包含页码、每页大小、排序字段等
+     * @return 每日文章分页数据
      */
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -168,8 +158,8 @@ public class DailyArticleController {
     /**
      * 分页获取文章列表（封装VO）
      *
-     * @param dailyArticleQueryRequest
-     * @return
+     * @param dailyArticleQueryRequest 查询请求参数，包含页码、每页大小、排序字段、搜索关键词等
+     * @return 每日文章VO对象的分页数据，包含更多展示信息
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<DailyArticleVO>> listDailyArticleVOByPage(@RequestBody DailyArticleQueryRequest dailyArticleQueryRequest) {
@@ -191,7 +181,7 @@ public class DailyArticleController {
     /**
      * 获取今日文章
      *
-     * @return 随机返回一篇最新的文章
+     * @return 随机选择的最新文章视图对象
      */
     @GetMapping("/today")
     public BaseResponse<DailyArticleVO> getTodayArticle() {
@@ -207,40 +197,20 @@ public class DailyArticleController {
     /**
      * 从ES搜索美文
      *
-     * @param dailyArticleQueryRequest
-     * @return
+     * @param searchText 搜索关键词，服务层会自动匹配文章的所有相关字段
+     * @return 符合搜索条件的文章视图对象分页结果
      */
-    @PostMapping("/search/es")
-    public BaseResponse<Page<DailyArticleVO>> searchDailyArticle(@RequestBody DailyArticleQueryRequest dailyArticleQueryRequest) {
-        if (dailyArticleQueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+    @GetMapping("/search/es")
+    public BaseResponse<Page<DailyArticleVO>> searchDailyArticle(@RequestParam String searchText) {
+        if (searchText == null || searchText.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "搜索关键词不能为空");
         }
-        long size = dailyArticleQueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        Page<DailyArticle> dailyArticlePage = dailyArticleService.searchFromEs(dailyArticleQueryRequest);
-        Page<DailyArticleVO> dailyArticleVOPage = new Page<>(dailyArticlePage.getCurrent(), size, dailyArticlePage.getTotal());
+        // 调用服务层方法进行搜索，service层负责匹配所有字段
+        Page<DailyArticle> dailyArticlePage = dailyArticleService.searchFromEs(searchText);
+        Page<DailyArticleVO> dailyArticleVOPage = new Page<>(dailyArticlePage.getCurrent(), 
+                dailyArticlePage.getSize(), dailyArticlePage.getTotal());
         List<DailyArticleVO> dailyArticleVOList = dailyArticleService.getDailyArticleVO(dailyArticlePage.getRecords());
         dailyArticleVOPage.setRecords(dailyArticleVOList);
         return ResultUtils.success(dailyArticleVOPage);
     }
-    
-    /**
-     * 测试ES索引
-     *
-     * @return
-     */
-    @GetMapping("/es/test")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> testEsIndex() {
-        boolean existsIndex = elasticsearchRestTemplate.indexOps(DailyArticleEsDTO.class).exists();
-        if (!existsIndex) {
-            boolean createIndex = elasticsearchRestTemplate.indexOps(DailyArticleEsDTO.class).create();
-            if (!createIndex) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建ES索引失败");
-            }
-        }
-        return ResultUtils.success(true);
-    }
-
 } 

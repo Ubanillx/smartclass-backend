@@ -1,6 +1,9 @@
 package com.ubanillx.smartclass.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.exception.BusinessException;
@@ -8,6 +11,7 @@ import com.ubanillx.smartclass.mapper.UserDailyArticleMapper;
 import com.ubanillx.smartclass.model.entity.DailyArticle;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.entity.UserDailyArticle;
+import com.ubanillx.smartclass.model.vo.DailyArticleVO;
 import com.ubanillx.smartclass.service.DailyArticleService;
 import com.ubanillx.smartclass.service.DailyArticleThumbService;
 import org.springframework.aop.framework.AopContext;
@@ -16,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 每日文章点赞服务实现
@@ -49,6 +54,45 @@ public class DailyArticleThumbServiceImpl extends ServiceImpl<UserDailyArticleMa
         synchronized (String.valueOf(userId).intern()) {
             return articleThumbService.doArticleThumbInner(userId, articleId);
         }
+    }
+    
+    /**
+     * 取消点赞文章
+     *
+     * @param articleId 文章id
+     * @param userId 用户id
+     * @return 是否成功
+     */
+    @Override
+    public int cancelArticleThumb(long articleId, long userId) {
+        // 判断文章是否存在
+        DailyArticle article = dailyArticleService.getById(articleId);
+        if (article == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "文章不存在");
+        }
+        
+        // 查询用户与文章的关联记录
+        QueryWrapper<UserDailyArticle> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        queryWrapper.eq("articleId", articleId);
+        UserDailyArticle userDailyArticle = this.getOne(queryWrapper);
+        
+        // 如果关联记录不存在或已经是未点赞状态，返回失败
+        if (userDailyArticle == null || userDailyArticle.getIsLiked() == 0) {
+            return 0;
+        }
+        
+        // 设置为未点赞
+        userDailyArticle.setIsLiked(0);
+        userDailyArticle.setLikeTime(null);
+        userDailyArticle.setUpdateTime(new Date());
+        boolean result = this.updateById(userDailyArticle);
+        if (result) {
+            // 更新文章点赞数 -1
+            dailyArticleService.decreaseLikeCount(articleId);
+            return 1;
+        }
+        return 0;
     }
 
     /**
@@ -119,6 +163,33 @@ public class DailyArticleThumbServiceImpl extends ServiceImpl<UserDailyArticleMa
                 return 0;
             }
         }
+    }
+    
+    /**
+     * 分页获取用户点赞的每日文章列表
+     *
+     * @param page
+     * @param queryWrapper
+     * @param thumbUserId
+     * @return
+     */
+    @Override
+    public Page<DailyArticleVO> listThumbArticleByPage(IPage<DailyArticle> page, Wrapper<DailyArticle> queryWrapper, long thumbUserId) {
+        if (thumbUserId <= 0) {
+            return new Page<>();
+        }
+        
+        // 使用Mapper中的自定义方法查询点赞的文章
+        Page<DailyArticle> articlePage = baseMapper.listThumbArticleByPage(page, queryWrapper, thumbUserId);
+        
+        // 转换为VO对象
+        List<DailyArticleVO> articleVOList = dailyArticleService.getDailyArticleVO(articlePage.getRecords());
+        
+        // 构建返回结果
+        Page<DailyArticleVO> articleVOPage = new Page<>(page.getCurrent(), page.getSize(), articlePage.getTotal());
+        articleVOPage.setRecords(articleVOList);
+        
+        return articleVOPage;
     }
 
     /**

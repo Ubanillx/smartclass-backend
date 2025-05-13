@@ -208,102 +208,34 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
     }
 
     @Override
-    public Page<DailyArticle> searchFromEs(DailyArticleQueryRequest dailyArticleQueryRequest) {
-        if (dailyArticleQueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+    public Page<DailyArticle> searchFromEs(String searchText) {
+        if (StringUtils.isBlank(searchText)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "搜索关键词为空");
         }
         
-        Long id = dailyArticleQueryRequest.getId();
-        String title = dailyArticleQueryRequest.getTitle();
-        String summary = dailyArticleQueryRequest.getSummary();
-        String content = dailyArticleQueryRequest.getContent();
-        String author = dailyArticleQueryRequest.getAuthor();
-        String source = dailyArticleQueryRequest.getSource();
-        String category = dailyArticleQueryRequest.getCategory();
-        String tags = dailyArticleQueryRequest.getTags();
-        Integer difficulty = dailyArticleQueryRequest.getDifficulty();
-        Date publishDateStart = dailyArticleQueryRequest.getPublishDateStart();
-        Date publishDateEnd = dailyArticleQueryRequest.getPublishDateEnd();
-        Long adminId = dailyArticleQueryRequest.getAdminId();
+        // 设置默认分页参数
+        long current = 0; // ES分页从0开始
+        long pageSize = 10;
         
-        // es 起始页为 0
-        long current = dailyArticleQueryRequest.getCurrent() - 1;
-        long pageSize = dailyArticleQueryRequest.getPageSize();
-        String sortField = dailyArticleQueryRequest.getSortField();
-        String sortOrder = dailyArticleQueryRequest.getSortOrder();
-        
+        // 创建多字段匹配查询
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        // 过滤
+        
+        // 只查询未删除的文章
         boolQueryBuilder.filter(QueryBuilders.termQuery("isDelete", 0));
         
-        // 按id查询
-        if (id != null) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("id", id));
-        }
+        // 创建多字段匹配查询
+        boolQueryBuilder.must(QueryBuilders.multiMatchQuery(searchText)
+                .field("title", 3.0f)    // 标题权重最高
+                .field("content", 1.0f)  // 内容权重普通
+                .field("summary", 2.0f)  // 摘要权重较高
+                .field("tags", 2.0f)     // 标签权重较高
+                .field("author", 1.5f)   // 作者权重中等
+                .field("source", 1.0f)   // 来源权重普通
+                .field("category", 1.5f) // 分类权重中等
+                .type("best_fields"));   // 使用最佳字段匹配策略
         
-        // 按管理员id查询
-        if (adminId != null) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("adminId", adminId));
-        }
-        
-        // 按难度查询
-        if (difficulty != null) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("difficulty", difficulty));
-        }
-        
-        // 按分类查询
-        if (StringUtils.isNotBlank(category)) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("category", category));
-        }
-        
-        // 按作者查询
-        if (StringUtils.isNotBlank(author)) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("author", author));
-        }
-        
-        // 按来源查询
-        if (StringUtils.isNotBlank(source)) {
-            boolQueryBuilder.filter(QueryBuilders.termQuery("source", source));
-        }
-        
-        // 按发布日期范围查询
-        if (publishDateStart != null) {
-            boolQueryBuilder.filter(QueryBuilders.rangeQuery("publishDate").gte(publishDateStart));
-        }
-        if (publishDateEnd != null) {
-            boolQueryBuilder.filter(QueryBuilders.rangeQuery("publishDate").lte(publishDateEnd));
-        }
-        
-        // 按标题查询
-        if (StringUtils.isNotBlank(title)) {
-            boolQueryBuilder.should(QueryBuilders.matchQuery("title", title));
-            boolQueryBuilder.minimumShouldMatch(1);
-        }
-        
-        // 按摘要查询
-        if (StringUtils.isNotBlank(summary)) {
-            boolQueryBuilder.should(QueryBuilders.matchQuery("summary", summary));
-            boolQueryBuilder.minimumShouldMatch(1);
-        }
-        
-        // 按内容查询
-        if (StringUtils.isNotBlank(content)) {
-            boolQueryBuilder.should(QueryBuilders.matchQuery("content", content));
-            boolQueryBuilder.minimumShouldMatch(1);
-        }
-        
-        // 按标签查询
-        if (StringUtils.isNotBlank(tags)) {
-            boolQueryBuilder.should(QueryBuilders.matchQuery("tags", tags));
-            boolQueryBuilder.minimumShouldMatch(1);
-        }
-        
-        // 排序
+        // 默认按相关度排序
         SortBuilder<?> sortBuilder = SortBuilders.scoreSort();
-        if (StringUtils.isNotBlank(sortField)) {
-            sortBuilder = SortBuilders.fieldSort(sortField);
-            sortBuilder.order(CommonConstant.SORT_ORDER_ASC.equals(sortOrder) ? SortOrder.ASC : SortOrder.DESC);
-        }
         
         // 分页
         PageRequest pageRequest = PageRequest.of((int) current, (int) pageSize);
@@ -315,8 +247,11 @@ public class DailyArticleServiceImpl extends ServiceImpl<DailyArticleMapper, Dai
                 .withSorts(sortBuilder)
                 .build();
         
+        // 执行搜索
         SearchHits<DailyArticleEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, DailyArticleEsDTO.class);
-        Page<DailyArticle> page = new Page<>();
+        
+        // 处理结果
+        Page<DailyArticle> page = new Page<>(current + 1, pageSize);  // 转换回以1开始的页码
         page.setTotal(searchHits.getTotalHits());
         List<DailyArticle> resourceList = new ArrayList<>();
         

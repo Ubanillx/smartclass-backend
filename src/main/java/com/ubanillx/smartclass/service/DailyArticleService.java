@@ -84,10 +84,10 @@ public interface DailyArticleService extends IService<DailyArticle> {
     /**
      * 从ES中搜索每日美文
      *
-     * @param dailyArticleQueryRequest 查询条件
+     * @param searchText 搜索关键词，将在标题、内容、摘要、标签等字段中进行匹配
      * @return 分页结果
      */
-    Page<DailyArticle> searchFromEs(DailyArticleQueryRequest dailyArticleQueryRequest);
+    Page<DailyArticle> searchFromEs(String searchText);
     
     /**
      * 保存每日美文并同步到ES
