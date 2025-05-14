@@ -120,27 +120,6 @@ public class UserWordBookServiceImpl extends ServiceImpl<UserWordBookMapper, Use
         return this.update(updateWrapper);
     }
 
-    @Override
-    public boolean updateCollectionStatus(Long userId, Long wordId, Integer isCollected) {
-        if (userId == null || wordId == null || isCollected == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
-        }
-
-        UpdateWrapper<UserWordBook> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("userId", userId);
-        updateWrapper.eq("wordId", wordId);
-        updateWrapper.eq("isDeleted", 0);
-        updateWrapper.set("isCollected", isCollected);
-
-        // 如果是收藏，设置收藏时间
-        if (isCollected == 1) {
-            updateWrapper.set("collectedTime", new Date());
-        }
-        
-        updateWrapper.set("updateTime", new Date());
-
-        return this.update(updateWrapper);
-    }
 
     @Override
     public boolean updateDifficulty(Long userId, Long wordId, Integer difficulty) {

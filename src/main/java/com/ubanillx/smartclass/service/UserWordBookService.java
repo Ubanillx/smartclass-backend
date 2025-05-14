@@ -45,16 +45,6 @@ public interface UserWordBookService extends IService<UserWordBook> {
     boolean updateLearningStatus(Long userId, Long wordId, Integer learningStatus);
     
     /**
-     * 收藏/取消收藏单词
-     * 
-     * @param userId 用户ID
-     * @param wordId 单词ID
-     * @param isCollected 是否收藏：0-否，1-是
-     * @return 是否操作成功
-     */
-    boolean updateCollectionStatus(Long userId, Long wordId, Integer isCollected);
-    
-    /**
      * 更新单词难度
      * 
      * @param userId 用户ID

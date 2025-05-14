@@ -24,7 +24,7 @@ import java.util.List;
  * 用户生词本接口
  */
 @RestController
-@RequestMapping("/wordBook")
+@RequestMapping("/word-books")
 @Slf4j
 public class UserWordBookController {
 
@@ -41,7 +41,7 @@ public class UserWordBookController {
      * @param request    HTTP请求
      * @return 是否添加成功
      */
-    @PostMapping("/add")
+    @PostMapping("")
     public BaseResponse<Boolean> addToWordBook(@RequestBody UserWordBookAddRequest addRequest,
                                               HttpServletRequest request) {
         if (addRequest == null || addRequest.getWordId() == null) {
@@ -66,8 +66,8 @@ public class UserWordBookController {
      * @param request HTTP请求
      * @return 是否移除成功
      */
-    @PostMapping("/remove")
-    public BaseResponse<Boolean> removeFromWordBook(@RequestParam Long wordId,
+    @DeleteMapping("/{wordId}")
+    public BaseResponse<Boolean> removeFromWordBook(@PathVariable Long wordId,
                                                  HttpServletRequest request) {
         if (wordId == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
@@ -84,19 +84,19 @@ public class UserWordBookController {
     /**
      * 更新单词学习状态
      *
+     * @param wordId 单词ID
      * @param updateStatusRequest 更新状态请求
      * @param request            HTTP请求
      * @return 是否更新成功
      */
-    @PostMapping("/updateStatus")
-    public BaseResponse<Boolean> updateLearningStatus(@RequestBody UserWordBookUpdateStatusRequest updateStatusRequest,
+    @PutMapping("/{wordId}/status")
+    public BaseResponse<Boolean> updateLearningStatus(@PathVariable Long wordId,
+                                                  @RequestBody UserWordBookUpdateStatusRequest updateStatusRequest,
                                                   HttpServletRequest request) {
-        if (updateStatusRequest == null || updateStatusRequest.getWordId() == null 
-                || updateStatusRequest.getLearningStatus() == null) {
+        if (updateStatusRequest == null || updateStatusRequest.getLearningStatus() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
         
-        Long wordId = updateStatusRequest.getWordId();
         Integer learningStatus = updateStatusRequest.getLearningStatus();
         
         // 获取当前登录用户
@@ -108,47 +108,21 @@ public class UserWordBookController {
     }
 
     /**
-     * 收藏/取消收藏单词
-     *
-     * @param collectionRequest 收藏请求
-     * @param request          HTTP请求
-     * @return 是否操作成功
-     */
-    @PostMapping("/collect")
-    public BaseResponse<Boolean> updateCollectionStatus(@RequestBody UserWordBookCollectionRequest collectionRequest,
-                                                    HttpServletRequest request) {
-        if (collectionRequest == null || collectionRequest.getWordId() == null 
-                || collectionRequest.getIsCollected() == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
-        }
-        
-        Long wordId = collectionRequest.getWordId();
-        Integer isCollected = collectionRequest.getIsCollected();
-        
-        // 获取当前登录用户
-        User loginUser = userService.getLoginUser(request);
-        Long userId = loginUser.getId();
-        
-        boolean result = userWordBookService.updateCollectionStatus(userId, wordId, isCollected);
-        return ResultUtils.success(result);
-    }
-
-    /**
      * 更新单词难度
      *
+     * @param wordId 单词ID
      * @param difficultyRequest 难度请求
      * @param request          HTTP请求
      * @return 是否更新成功
      */
-    @PostMapping("/updateDifficulty")
-    public BaseResponse<Boolean> updateDifficulty(@RequestBody UserWordBookUpdateDifficultyRequest difficultyRequest,
+    @PutMapping("/{wordId}/difficulty")
+    public BaseResponse<Boolean> updateDifficulty(@PathVariable Long wordId,
+                                              @RequestBody UserWordBookUpdateDifficultyRequest difficultyRequest,
                                               HttpServletRequest request) {
-        if (difficultyRequest == null || difficultyRequest.getWordId() == null 
-                || difficultyRequest.getDifficulty() == null) {
+        if (difficultyRequest == null || difficultyRequest.getDifficulty() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
         
-        Long wordId = difficultyRequest.getWordId();
         Integer difficulty = difficultyRequest.getDifficulty();
         
         // 获取当前登录用户
@@ -166,8 +140,8 @@ public class UserWordBookController {
      * @param request                 HTTP请求
      * @return 生词本分页列表
      */
-    @PostMapping("/list/page")
-    public BaseResponse<Page<UserWordBookVO>> listUserWordBookByPage(@RequestBody UserWordBookQueryRequest userWordBookQueryRequest,
+    @GetMapping("/page")
+    public BaseResponse<Page<UserWordBookVO>> listUserWordBookByPage(UserWordBookQueryRequest userWordBookQueryRequest,
                                                                 HttpServletRequest request) {
         if (userWordBookQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
@@ -216,8 +190,8 @@ public class UserWordBookController {
      * @param request HTTP请求
      * @return 是否在生词本中
      */
-    @GetMapping("/isInBook")
-    public BaseResponse<Boolean> isWordInUserBook(@RequestParam Long wordId,
+    @GetMapping("/{wordId}/exists")
+    public BaseResponse<Boolean> isWordInUserBook(@PathVariable Long wordId,
                                            HttpServletRequest request) {
         if (wordId == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
@@ -239,7 +213,7 @@ public class UserWordBookController {
      * @param request        HTTP请求
      * @return 生词本列表
      */
-    @GetMapping("/list")
+    @GetMapping("")
     public BaseResponse<List<UserWordBookVO>> getUserWordBookList(
             @RequestParam(required = false) Integer learningStatus,
             @RequestParam(required = false) Integer isCollected,
