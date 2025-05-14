@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
  * 每日文章收藏接口
  */
 @RestController
-@RequestMapping("/dailyArticle/favour")
+@RequestMapping("/daily-articles/favourites")
 @Slf4j
 public class DailyArticleFavourController {
 
@@ -43,7 +43,7 @@ public class DailyArticleFavourController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 操作结果，1-收藏成功，-1-取消收藏，0-操作失败
      */
-    @PostMapping("do/{articleId}")
+    @PostMapping("/{articleId}")
     public BaseResponse<Integer> doArticleFavour(@PathVariable("articleId") long articleId,
                                              HttpServletRequest request) {
         if (articleId <= 0) {
@@ -62,7 +62,7 @@ public class DailyArticleFavourController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 操作结果，1-取消成功，0-操作失败
      */
-    @PostMapping("/cancel/{articleId}")
+    @DeleteMapping("/{articleId}")
     public BaseResponse<Integer> cancelArticleFavour(@PathVariable("articleId") long articleId,
                                                 HttpServletRequest request) {
         if (articleId <= 0) {
@@ -81,7 +81,7 @@ public class DailyArticleFavourController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 分页后的文章视图对象列表
      */
-    @PostMapping("/list/page/my")
+    @GetMapping("/me/page")
     public BaseResponse<Page<DailyArticleVO>> listMyFavourArticleByPage(@RequestBody DailyArticleQueryRequest dailyArticleQueryRequest,
                                                         HttpServletRequest request) {
         if (dailyArticleQueryRequest == null) {
@@ -107,7 +107,7 @@ public class DailyArticleFavourController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 布尔值，true表示已收藏，false表示未收藏
      */
-    @GetMapping("/check/{articleId}")
+    @GetMapping("/{articleId}/status")
     public BaseResponse<Boolean> isFavourArticle(@PathVariable("articleId") long articleId,
                                             HttpServletRequest request) {
         if (articleId <= 0) {

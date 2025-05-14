@@ -45,6 +45,25 @@ public class UserDailyWordServiceImpl extends ServiceImpl<UserDailyWordMapper, U
     }
 
     @Override
+    public boolean cancelWordStudied(long wordId, long userId) {
+        // 查询关联记录是否存在
+        QueryWrapper<UserDailyWord> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        queryWrapper.eq("wordId", wordId);
+        UserDailyWord userDailyWord = this.getOne(queryWrapper);
+        
+        // 如果不存在，直接返回成功
+        if (userDailyWord == null) {
+            return true;
+        }
+        
+        // 如果存在，则更新为未学习
+        userDailyWord.setIsStudied(0); // 设置为未学习
+        userDailyWord.setUpdateTime(new Date());
+        return this.updateById(userDailyWord);
+    }
+
+    @Override
     public boolean updateMasteryLevel(long wordId, long userId, int masteryLevel) {
         // 查询关联记录是否存在
         QueryWrapper<UserDailyWord> queryWrapper = new QueryWrapper<>();

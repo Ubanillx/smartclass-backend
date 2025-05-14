@@ -17,7 +17,7 @@ import javax.servlet.http.HttpServletRequest;
  * 每日单词点赞接口
  */
 @RestController
-@RequestMapping("/daily/word/thumb")
+@RequestMapping("/daily-word-thumbs")
 @Slf4j
 public class DailyWordThumbController {
 
@@ -34,7 +34,7 @@ public class DailyWordThumbController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 1-点赞成功；0-操作失败
      */
-    @PostMapping("/do/{wordId}")
+    @PostMapping("/{wordId}")
     public BaseResponse<Integer> thumbWord(@PathVariable("wordId") long wordId,
                                                HttpServletRequest request) {
         if (wordId <= 0) {
@@ -54,7 +54,7 @@ public class DailyWordThumbController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 1-取消点赞成功；0-操作失败
      */
-    @PostMapping("/cancel/{wordId}")
+    @DeleteMapping("/{wordId}")
     public BaseResponse<Integer> cancelThumbWord(@PathVariable("wordId") long wordId,
                                                HttpServletRequest request) {
         if (wordId <= 0) {
@@ -74,7 +74,7 @@ public class DailyWordThumbController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 是否点赞
      */
-    @GetMapping("/is-thumb/{wordId}")
+    @GetMapping("/{wordId}/status")
     public BaseResponse<Boolean> isThumbWord(@PathVariable("wordId") long wordId,
                                               HttpServletRequest request) {
         if (wordId <= 0) {

@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * AI分身接口
  */
 @RestController
-@RequestMapping("/ai_avatar")
+@RequestMapping("/ai-avatars")
 @Slf4j
 public class AiAvatarController {
 
@@ -45,7 +45,7 @@ public class AiAvatarController {
      * @param request 请求体
      * @return baseResponse
      */
-    @PostMapping("/add")
+    @PostMapping("")
     public BaseResponse<Long> addAiAvatar(@RequestBody AiAvatarAddRequest aiAvatarAddRequest, HttpServletRequest request) {
         if (aiAvatarAddRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
@@ -65,17 +65,16 @@ public class AiAvatarController {
     /**
      * 删除AI分身
      *
-     * @param deleteRequest 删除请求
+     * @param id 要删除的资源ID
      * @param request 请求体
      * @return baseResponse
      */
-    @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteAiAvatar(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+    @DeleteMapping("/{id}")
+    public BaseResponse<Boolean> deleteAiAvatar(@PathVariable("id") Long id, HttpServletRequest request) {
+        if (id <= 0) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);
-        long id = deleteRequest.getId();
         // 判断是否存在
         AiAvatar oldAiAvatar = aiAvatarService.getById(id);
         if (oldAiAvatar == null) {
@@ -92,20 +91,24 @@ public class AiAvatarController {
     /**
      * 更新AI分身
      *
+     * @param id 要更新的资源ID
      * @param aiAvatarUpdateRequest ai更新请求
      * @param request 请求体
      * @return baseResponse
      */
-    @PostMapping("/update")
-    public BaseResponse<Boolean> updateAiAvatar(@RequestBody AiAvatarUpdateRequest aiAvatarUpdateRequest,
+    @PutMapping("/{id}")
+    public BaseResponse<Boolean> updateAiAvatar(@PathVariable("id") Long id, 
+            @RequestBody AiAvatarUpdateRequest aiAvatarUpdateRequest,
             HttpServletRequest request) {
-        if (aiAvatarUpdateRequest == null || aiAvatarUpdateRequest.getId() <= 0) {
+        if (aiAvatarUpdateRequest == null || id <= 0) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
         
+        // 设置ID
+        aiAvatarUpdateRequest.setId(id);
+        
         // 参数校验
         User loginUser = userService.getLoginUser(request);
-        long id = aiAvatarUpdateRequest.getId();
         
         // 判断是否存在
         AiAvatar oldAiAvatar = aiAvatarService.getById(id);
@@ -131,8 +134,8 @@ public class AiAvatarController {
      * @param id ai分身id
      * @return baseResponse
      */
-    @GetMapping("/get")
-    public BaseResponse<AiAvatarVO> getAiAvatarById(long id) {
+    @GetMapping("/{id}")
+    public BaseResponse<AiAvatarVO> getAiAvatarById(@PathVariable("id") Long id) {
         if (id <= 0) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
@@ -151,7 +154,7 @@ public class AiAvatarController {
      * @param aiAvatarQueryRequest ai查询请求
      * @return baseResponse
      */
-    @GetMapping("/list")
+    @GetMapping("/admin")
     public BaseResponse<List<AiAvatarVO>> listAiAvatar(AiAvatarQueryRequest aiAvatarQueryRequest) {
         if (aiAvatarQueryRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
@@ -175,7 +178,7 @@ public class AiAvatarController {
      * @param aiAvatarQueryRequest ai查询请求
      * @return baseResponse
      */
-    @GetMapping("/list/page")
+    @GetMapping("/page")
     public BaseResponse<Page<AiAvatarVO>> listAiAvatarByPage(AiAvatarQueryRequest aiAvatarQueryRequest) {
         if (aiAvatarQueryRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);

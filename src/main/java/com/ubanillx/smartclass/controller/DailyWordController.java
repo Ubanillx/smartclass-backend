@@ -31,7 +31,7 @@ import java.util.List;
  * 每日单词接口
  */
 @RestController
-@RequestMapping("/dailyWord")
+@RequestMapping("/daily-words")
 @Slf4j
 public class DailyWordController {
 
@@ -51,7 +51,7 @@ public class DailyWordController {
      * @param request HTTP请求，用于获取当前登录用户
      * @return 新增单词的ID
      */
-    @PostMapping("/add")
+    @PostMapping("")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Long> addDailyWord(@RequestBody DailyWordAddRequest dailyWordAddRequest,
                                          HttpServletRequest request) {
@@ -73,16 +73,15 @@ public class DailyWordController {
     /**
      * 删除每日单词（仅管理员）
      *
-     * @param deleteRequest 删除请求，包含要删除单词的ID
+     * @param id 要删除单词的ID
      * @return 是否删除成功
      */
-    @PostMapping("/delete")
+    @DeleteMapping("/{id}")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> deleteDailyWord(@RequestBody DeleteRequest deleteRequest) {
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+    public BaseResponse<Boolean> deleteDailyWord(@PathVariable("id") Long id) {
+        if (id == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long id = deleteRequest.getId();
         // 判断是否存在
         DailyWord oldDailyWord = dailyWordService.getById(id);
         ThrowUtils.throwIf(oldDailyWord == null, ErrorCode.NOT_FOUND_ERROR);
@@ -94,19 +93,22 @@ public class DailyWordController {
     /**
      * 更新每日单词（仅管理员）
      *
+     * @param id 单词ID
      * @param dailyWordUpdateRequest 单词更新请求，包含需要更新的单词信息
      * @return 是否更新成功
      */
-    @PostMapping("/update")
+    @PutMapping("/{id}/admin")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updateDailyWord(@RequestBody DailyWordUpdateRequest dailyWordUpdateRequest) {
-        if (dailyWordUpdateRequest == null || dailyWordUpdateRequest.getId() <= 0) {
+    public BaseResponse<Boolean> updateDailyWord(@PathVariable("id") Long id, 
+                                              @RequestBody DailyWordUpdateRequest dailyWordUpdateRequest) {
+        if (dailyWordUpdateRequest == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        // 设置ID
+        dailyWordUpdateRequest.setId(id);
         DailyWord dailyWord = new DailyWord();
         BeanUtils.copyProperties(dailyWordUpdateRequest, dailyWord);
         // 判断是否存在
-        long id = dailyWordUpdateRequest.getId();
         DailyWord oldDailyWord = dailyWordService.getById(id);
         ThrowUtils.throwIf(oldDailyWord == null, ErrorCode.NOT_FOUND_ERROR);
         // 使用updateDailyWord方法，同步更新ES中的数据
@@ -120,8 +122,8 @@ public class DailyWordController {
      * @param id 单词ID
      * @return 单词视图对象
      */
-    @GetMapping("/get/vo")
-    public BaseResponse<DailyWordVO> getDailyWordVOById(long id) {
+    @GetMapping("/{id}")
+    public BaseResponse<DailyWordVO> getDailyWordVOById(@PathVariable("id") Long id) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -139,9 +141,9 @@ public class DailyWordController {
      * @param dailyWordQueryRequest 单词查询请求，包含分页参数和查询条件
      * @return 单词分页列表
      */
-    @PostMapping("/list/page")
+    @GetMapping("/admin/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<DailyWord>> listDailyWordByPage(@RequestBody DailyWordQueryRequest dailyWordQueryRequest) {
+    public BaseResponse<Page<DailyWord>> listDailyWordByPage(DailyWordQueryRequest dailyWordQueryRequest) {
         if (dailyWordQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -160,8 +162,8 @@ public class DailyWordController {
      * @param dailyWordQueryRequest 单词查询请求，包含分页参数和查询条件
      * @return 单词视图对象分页列表
      */
-    @PostMapping("/list/page/vo")
-    public BaseResponse<Page<DailyWordVO>> listDailyWordVOByPage(@RequestBody DailyWordQueryRequest dailyWordQueryRequest) {
+    @GetMapping("/page")
+    public BaseResponse<Page<DailyWordVO>> listDailyWordVOByPage(DailyWordQueryRequest dailyWordQueryRequest) {
         if (dailyWordQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -199,7 +201,7 @@ public class DailyWordController {
      * @param searchText 搜索关键词，服务层会自动匹配单词的所有相关字段
      * @return 符合搜索条件的单词视图对象分页列表
      */
-    @GetMapping("/search/es")
+    @GetMapping("/search")
     public BaseResponse<Page<DailyWordVO>> searchDailyWord(@RequestParam String searchText) {
         if (searchText == null || searchText.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "搜索关键词不能为空");

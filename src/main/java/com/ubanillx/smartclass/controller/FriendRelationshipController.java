@@ -192,7 +192,7 @@ public class FriendRelationshipController {
      * @param request HTTP请求，用于获取当前登录用户信息
      * @return 当前用户的好友列表，包含好友信息
      */
-    @GetMapping("/list")
+    @GetMapping
     public BaseResponse<List<FriendRelationshipVO>> listUserFriends(HttpServletRequest request) {
         // 获取当前登录用户ID
         User loginUser = userService.getLoginUser(request);
@@ -208,9 +208,9 @@ public class FriendRelationshipController {
      * @param friendRelationshipQueryRequest 查询参数，包含分页信息和筛选条件
      * @return 分页好友关系结果
      */
-    @PostMapping("/page")
+    @GetMapping("/admin/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<FriendRelationship>> listFriendRelationshipByPage(@RequestBody FriendRelationshipQueryRequest friendRelationshipQueryRequest) {
+    public BaseResponse<Page<FriendRelationship>> listFriendRelationshipByPage(FriendRelationshipQueryRequest friendRelationshipQueryRequest) {
         long current = friendRelationshipQueryRequest.getCurrent();
         long size = friendRelationshipQueryRequest.getPageSize();
 
@@ -232,8 +232,8 @@ public class FriendRelationshipController {
      * @param request HTTP请求，用于获取当前登录用户信息
      * @return 分页好友关系VO结果，包含详细的好友信息
      */
-    @PostMapping("/page/vo")
-    public BaseResponse<Page<FriendRelationshipVO>> listFriendRelationshipVOByPage(@RequestBody FriendRelationshipQueryRequest friendRelationshipQueryRequest,
+    @GetMapping("/page")
+    public BaseResponse<Page<FriendRelationshipVO>> listFriendRelationshipVOByPage(FriendRelationshipQueryRequest friendRelationshipQueryRequest,
                                                            HttpServletRequest request) {
         if (friendRelationshipQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -269,7 +269,7 @@ public class FriendRelationshipController {
      * @param request HTTP请求，用于获取当前登录用户信息
      * @return 删除结果，true表示删除成功，false表示删除失败
      */
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> deleteFriendRelationship(@PathVariable("id") long id, HttpServletRequest request) {
         if (id <= 0) {
@@ -304,7 +304,7 @@ public class FriendRelationshipController {
      * @param request HTTP请求，用于获取当前登录用户信息
      * @return 删除结果，true表示删除成功，false表示删除失败
      */
-    @PostMapping("/delete/user/{userId}")
+    @DeleteMapping("/user/{userId}")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> deleteFriendByUserId(@PathVariable("userId") long userId, HttpServletRequest request) {
         if (userId <= 0) {

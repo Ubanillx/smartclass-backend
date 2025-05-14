@@ -30,7 +30,7 @@ import java.util.List;
  * 系统公告接口
  */
 @RestController
-@RequestMapping("/announcement")
+@RequestMapping("/announcements")
 @Slf4j
 public class AnnouncementController {
 
@@ -49,7 +49,7 @@ public class AnnouncementController {
      * @param request HTTP请求
      * @return 新创建的公告ID
      */
-    @PostMapping("/add")
+    @PostMapping("")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Long> addAnnouncement(@RequestBody AnnouncementAddRequest announcementAddRequest,
                                          HttpServletRequest request) {
@@ -67,16 +67,15 @@ public class AnnouncementController {
     /**
      * 删除公告（仅管理员）
      *
-     * @param deleteRequest 删除请求体，包含要删除的公告ID
+     * @param id 要删除的公告ID
      * @return 删除结果，true表示成功，false表示失败
      */
-    @PostMapping("/delete")
+    @DeleteMapping("/{id}")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> deleteAnnouncement(@RequestBody DeleteRequest deleteRequest) {
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+    public BaseResponse<Boolean> deleteAnnouncement(@PathVariable long id) {
+        if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long id = deleteRequest.getId();
         // 判断是否存在
         Announcement oldAnnouncement = announcementService.getById(id);
         ThrowUtils.throwIf(oldAnnouncement == null, ErrorCode.NOT_FOUND_ERROR);
@@ -87,19 +86,23 @@ public class AnnouncementController {
     /**
      * 更新公告（仅管理员）
      *
+     * @param id 要更新的公告ID
      * @param announcementUpdateRequest 公告更新请求体，包含要更新的公告信息
      * @return 更新结果，true表示成功，false表示失败
      */
-    @PostMapping("/update")
+    @PutMapping("/{id}/admin")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updateAnnouncement(@RequestBody AnnouncementUpdateRequest announcementUpdateRequest) {
-        if (announcementUpdateRequest == null || announcementUpdateRequest.getId() <= 0) {
+    public BaseResponse<Boolean> updateAnnouncement(@PathVariable long id,
+                                                 @RequestBody AnnouncementUpdateRequest announcementUpdateRequest) {
+        if (announcementUpdateRequest == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        // 确保ID一致
+        announcementUpdateRequest.setId(id);
+        
         Announcement announcement = new Announcement();
         BeanUtils.copyProperties(announcementUpdateRequest, announcement);
         // 判断是否存在
-        long id = announcementUpdateRequest.getId();
         Announcement oldAnnouncement = announcementService.getById(id);
         ThrowUtils.throwIf(oldAnnouncement == null, ErrorCode.NOT_FOUND_ERROR);
         boolean result = announcementService.updateById(announcement);
@@ -113,8 +116,8 @@ public class AnnouncementController {
      * @param request HTTP请求
      * @return 公告信息（VO对象）
      */
-    @GetMapping("/get/vo")
-    public BaseResponse<AnnouncementVO> getAnnouncementVOById(long id, HttpServletRequest request) {
+    @GetMapping("/{id}")
+    public BaseResponse<AnnouncementVO> getAnnouncementVOById(@PathVariable long id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -152,9 +155,9 @@ public class AnnouncementController {
      * @param announcementQueryRequest 公告查询请求体，包含分页参数和查询条件
      * @return 分页公告信息
      */
-    @PostMapping("/list/page")
+    @GetMapping("/admin/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<Announcement>> listAnnouncementByPage(@RequestBody AnnouncementQueryRequest announcementQueryRequest) {
+    public BaseResponse<Page<Announcement>> listAnnouncementByPage(AnnouncementQueryRequest announcementQueryRequest) {
         if (announcementQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -174,8 +177,8 @@ public class AnnouncementController {
      * @param request HTTP请求
      * @return 分页公告信息（VO对象）
      */
-    @PostMapping("/list/page/vo")
-    public BaseResponse<Page<AnnouncementVO>> listAnnouncementVOByPage(@RequestBody AnnouncementQueryRequest announcementQueryRequest,
+    @GetMapping("/page")
+    public BaseResponse<Page<AnnouncementVO>> listAnnouncementVOByPage(AnnouncementQueryRequest announcementQueryRequest,
                                                                   HttpServletRequest request) {
         if (announcementQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -212,7 +215,7 @@ public class AnnouncementController {
      * @param request HTTP请求
      * @return 标记结果，true表示成功，false表示失败
      */
-    @PostMapping("/read/{id}")
+    @PostMapping("/{id}/read")
     public BaseResponse<Boolean> readAnnouncement(@PathVariable long id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -239,7 +242,7 @@ public class AnnouncementController {
      * @param request HTTP请求
      * @return 是否已读，true表示已读，false表示未读
      */
-    @GetMapping("/has-read/{id}")
+    @GetMapping("/{id}/has-read")
     public BaseResponse<Boolean> hasReadAnnouncement(@PathVariable long id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);

@@ -18,6 +18,15 @@ public interface UserDailyWordService extends IService<UserDailyWord> {
     boolean markWordAsStudied(long wordId, long userId);
 
     /**
+     * 取消标记单词为已学习
+     *
+     * @param wordId
+     * @param userId
+     * @return
+     */
+    boolean cancelWordStudied(long wordId, long userId);
+
+    /**
      * 更新单词掌握程度
      *
      * @param wordId

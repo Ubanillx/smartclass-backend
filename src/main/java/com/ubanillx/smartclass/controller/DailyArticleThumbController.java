@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
  * 每日文章点赞接口
  */
 @RestController
-@RequestMapping("/dailyArticle/thumb")
+@RequestMapping("/daily-articles")
 @Slf4j
 public class DailyArticleThumbController {
 
@@ -43,7 +43,7 @@ public class DailyArticleThumbController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 1-点赞成功；0-操作失败
      */
-    @PostMapping("/do/{articleId}")
+    @PostMapping("/{articleId}/thumbs")
     public BaseResponse<Integer> thumbArticle(@PathVariable("articleId") long articleId,
                                                HttpServletRequest request) {
         if (articleId <= 0) {
@@ -63,7 +63,7 @@ public class DailyArticleThumbController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 操作结果，1-取消成功，0-操作失败
      */
-    @PostMapping("/cancel/{articleId}")
+    @DeleteMapping("/{articleId}/thumbs")
     public BaseResponse<Integer> cancelArticleThumb(@PathVariable("articleId") long articleId,
                                                HttpServletRequest request) {
         if (articleId <= 0) {
@@ -83,8 +83,8 @@ public class DailyArticleThumbController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 分页后的文章视图对象列表
      */
-    @PostMapping("/list/page/my")
-    public BaseResponse<Page<DailyArticleVO>> listMyThumbArticleByPage(@RequestBody DailyArticleQueryRequest dailyArticleQueryRequest,
+    @GetMapping("/thumbs/me/page")
+    public BaseResponse<Page<DailyArticleVO>> listMyThumbArticleByPage(DailyArticleQueryRequest dailyArticleQueryRequest,
                                                       HttpServletRequest request) {
         if (dailyArticleQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -109,7 +109,7 @@ public class DailyArticleThumbController {
      * @param request HTTP请求对象，用于获取当前登录用户信息
      * @return 是否点赞
      */
-    @GetMapping("/check/{articleId}")
+    @GetMapping("/{articleId}/thumbs/status")
     public BaseResponse<Boolean> isThumbArticle(@PathVariable("articleId") long articleId,
                                               HttpServletRequest request) {
         if (articleId <= 0) {
