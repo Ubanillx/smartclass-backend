@@ -3,18 +3,13 @@ package com.ubanillx.smartclass.controller;
 import com.ubanillx.smartclass.common.BaseResponse;
 import com.ubanillx.smartclass.common.ResultUtils;
 import com.ubanillx.smartclass.common.ErrorCode;
-import com.ubanillx.smartclass.constant.UserConstant;
 import com.ubanillx.smartclass.exception.BusinessException;
 import com.ubanillx.smartclass.exception.ThrowUtils;
 import com.ubanillx.smartclass.manager.CosManager;
-import com.ubanillx.smartclass.model.dto.file.UploadFileRequest;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.enums.FileUploadBizEnum;
 import com.ubanillx.smartclass.service.UserService;
-import com.ubanillx.smartclass.utils.FileUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -23,8 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.util.Arrays;
 
 /**
  * 文件接口
@@ -44,13 +37,11 @@ public class FileController {
      * 通用文件上传
      *
      * @param file 上传的文件
-     * @param uploadFileRequest 上传请求（可选）
      * @param request HTTP请求
      * @return 文件访问URL
      */
     @PostMapping("/upload")
-    public BaseResponse<String> uploadFile(@RequestPart("file") MultipartFile file,
-                                         UploadFileRequest uploadFileRequest, HttpServletRequest request) {
+    public BaseResponse<String> uploadFile(@RequestPart("file") MultipartFile file, HttpServletRequest request) {
         // 直接使用通用文件类型
         FileUploadBizEnum fileUploadBizEnum = FileUploadBizEnum.GENERAL;
         
@@ -127,10 +118,10 @@ public class FileController {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 上传课程资料
-     * 
+     *
      * @param file 课程资料文件
      * @param request HTTP请求
      * @return 资料URL
