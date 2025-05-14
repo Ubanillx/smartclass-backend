@@ -16,6 +16,11 @@ public class FriendRelationshipUpdateRequest implements Serializable {
     private Long id;
     
     /**
+     * 对方用户ID
+     */
+    private Long userId;
+    
+    /**
      * 关系状态：pending/accepted/blocked
      */
     private String status;

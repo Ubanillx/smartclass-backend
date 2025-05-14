@@ -114,11 +114,6 @@ public class FriendRelationshipServiceImpl extends ServiceImpl<FriendRelationshi
 
     @Override
     public boolean isFriend(Long userId1, Long userId2) {
-        // 参数校验
-        if (userId1 == null || userId2 == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户ID不能为空");
-        }
-        
         // 查询好友关系
         FriendRelationship relationship = getFriendRelationship(userId1, userId2);
         if (relationship == null) {
@@ -141,7 +136,7 @@ public class FriendRelationshipServiceImpl extends ServiceImpl<FriendRelationshi
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户ID不能为空");
         }
         
-        // 查询条件：作为用户1或用户2的所有关系，且状态匹配
+        // 构建查询条件
         QueryWrapper<FriendRelationship> queryWrapper = new QueryWrapper<>();
         queryWrapper.and(qw -> qw
                 .eq("userId1", userId)
@@ -157,9 +152,8 @@ public class FriendRelationshipServiceImpl extends ServiceImpl<FriendRelationshi
         // 获取好友关系列表
         List<FriendRelationship> relationships = list(queryWrapper);
         
-        // 转换为VO，并填充好友用户信息
-        List<FriendRelationshipVO> friendRelationshipVOList = new ArrayList<>();
-        for (FriendRelationship relationship : relationships) {
+        // 使用Stream API转换为VO并填充好友用户信息
+        return relationships.stream().map(relationship -> {
             FriendRelationshipVO vo = new FriendRelationshipVO();
             BeanUtils.copyProperties(relationship, vo);
             
@@ -168,30 +162,19 @@ public class FriendRelationshipServiceImpl extends ServiceImpl<FriendRelationshi
                     relationship.getUserId2() : relationship.getUserId1();
             
             // 获取好友用户信息
-            UserVO friendUserVO = userService.getUserVOById(friendUserId);
-            vo.setFriendUser(friendUserVO);
+            vo.setFriendUser(userService.getUserVOById(friendUserId));
             
-            friendRelationshipVOList.add(vo);
-        }
-        
-        return friendRelationshipVOList;
+            return vo;
+        }).collect(Collectors.toList());
     }
 
     @Override
     public boolean deleteFriendRelationship(Long userId1, Long userId2) {
-        // 参数校验
-        if (userId1 == null || userId2 == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户ID不能为空");
-        }
-        
-        // 获取好友关系
+        // 获取好友关系 - getFriendRelationship内部已包含参数校验
         FriendRelationship relationship = getFriendRelationship(userId1, userId2);
-        if (relationship == null) {
-            return true; // 关系不存在，视为删除成功
-        }
         
-        // 删除好友关系
-        return removeById(relationship.getId());
+        // 关系不存在视为删除成功
+        return relationship == null || removeById(relationship.getId());
     }
 
     @Override
@@ -200,14 +183,15 @@ public class FriendRelationshipServiceImpl extends ServiceImpl<FriendRelationshi
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
         
+        QueryWrapper<FriendRelationship> queryWrapper = new QueryWrapper<>();
+        
+        // 添加基本条件
         Long userId1 = friendRelationshipQueryRequest.getUserId1();
         Long userId2 = friendRelationshipQueryRequest.getUserId2();
         Long userId = friendRelationshipQueryRequest.getUserId();
         String status = friendRelationshipQueryRequest.getStatus();
-        String sortField = friendRelationshipQueryRequest.getSortField();
-        String sortOrder = friendRelationshipQueryRequest.getSortOrder();
         
-        QueryWrapper<FriendRelationship> queryWrapper = new QueryWrapper<>();
+        // 精确匹配条件
         queryWrapper.eq(userId1 != null, "userId1", userId1);
         queryWrapper.eq(userId2 != null, "userId2", userId2);
         queryWrapper.eq(StringUtils.isNotBlank(status), "status", status);
@@ -221,12 +205,14 @@ public class FriendRelationshipServiceImpl extends ServiceImpl<FriendRelationshi
             );
         }
         
-        // 排序
-        if (StringUtils.isNotBlank(sortField)) {
-            queryWrapper.orderBy(true, "asc".equals(sortOrder), sortField);
-        } else {
-            queryWrapper.orderByDesc("createTime");
-        }
+        // 排序处理
+        String sortField = friendRelationshipQueryRequest.getSortField();
+        String sortOrder = friendRelationshipQueryRequest.getSortOrder();
+        queryWrapper.orderBy(
+            StringUtils.isNotBlank(sortField), 
+            "asc".equals(sortOrder), 
+            StringUtils.isNotBlank(sortField) ? sortField : "createTime"
+        );
         
         return queryWrapper;
     }
@@ -234,6 +220,8 @@ public class FriendRelationshipServiceImpl extends ServiceImpl<FriendRelationshi
     @Override
     public Page<FriendRelationshipVO> getFriendRelationshipVOPage(Page<FriendRelationship> friendRelationshipPage, HttpServletRequest request) {
         List<FriendRelationship> friendRelationshipList = friendRelationshipPage.getRecords();
+        
+        // 创建VO分页对象
         Page<FriendRelationshipVO> friendRelationshipVOPage = new Page<>(
                 friendRelationshipPage.getCurrent(),
                 friendRelationshipPage.getSize(),
@@ -251,27 +239,28 @@ public class FriendRelationshipServiceImpl extends ServiceImpl<FriendRelationshi
         Long loginUserId = loginUser.getId();
         
         // 转换为VO列表
-        List<FriendRelationshipVO> friendRelationshipVOList = friendRelationshipList.stream().map(friendRelationship -> {
-            FriendRelationshipVO vo = new FriendRelationshipVO();
-            BeanUtils.copyProperties(friendRelationship, vo);
-            
-            // 判断好友是哪个用户
-            Long friendUserId;
-            if (loginUserId.equals(friendRelationship.getUserId1())) {
-                friendUserId = friendRelationship.getUserId2();
-            } else if (loginUserId.equals(friendRelationship.getUserId2())) {
-                friendUserId = friendRelationship.getUserId1();
-            } else {
-                // 如果是管理员查看，默认展示用户2的信息
-                friendUserId = friendRelationship.getUserId2();
-            }
-            
-            // 获取好友用户信息
-            UserVO friendUserVO = userService.getUserVOById(friendUserId);
-            vo.setFriendUser(friendUserVO);
-            
-            return vo;
-        }).collect(Collectors.toList());
+        List<FriendRelationshipVO> friendRelationshipVOList = friendRelationshipList.stream()
+            .map(friendRelationship -> {
+                FriendRelationshipVO vo = new FriendRelationshipVO();
+                BeanUtils.copyProperties(friendRelationship, vo);
+                
+                // 确定好友ID
+                Long friendUserId;
+                if (loginUserId.equals(friendRelationship.getUserId1())) {
+                    friendUserId = friendRelationship.getUserId2();
+                } else if (loginUserId.equals(friendRelationship.getUserId2())) {
+                    friendUserId = friendRelationship.getUserId1();
+                } else {
+                    // 管理员查看，默认展示用户2
+                    friendUserId = friendRelationship.getUserId2();
+                }
+                
+                // 设置好友信息
+                vo.setFriendUser(userService.getUserVOById(friendUserId));
+                
+                return vo;
+            })
+            .collect(Collectors.toList());
         
         friendRelationshipVOPage.setRecords(friendRelationshipVOList);
         return friendRelationshipVOPage;

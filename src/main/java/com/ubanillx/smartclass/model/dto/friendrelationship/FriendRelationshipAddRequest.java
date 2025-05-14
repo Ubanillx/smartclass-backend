@@ -11,11 +11,6 @@ import java.io.Serializable;
 public class FriendRelationshipAddRequest implements Serializable {
     
     /**
-     * 用户1 ID，关联到user表
-     */
-    private Long userId1;
-
-    /**
      * 用户2 ID，关联到user表
      */
     private Long userId2;
