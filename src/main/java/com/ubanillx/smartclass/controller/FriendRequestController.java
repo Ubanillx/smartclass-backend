@@ -3,7 +3,7 @@ package com.ubanillx.smartclass.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ubanillx.smartclass.annotation.AuthCheck;
 import com.ubanillx.smartclass.common.BaseResponse;
-import com.ubanillx.smartclass.common.DeleteRequest;
+
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.common.ResultUtils;
 import com.ubanillx.smartclass.constant.FriendRequestConstant;
@@ -12,7 +12,6 @@ import com.ubanillx.smartclass.exception.BusinessException;
 import com.ubanillx.smartclass.exception.ThrowUtils;
 import com.ubanillx.smartclass.model.dto.friendrequest.FriendRequestAddRequest;
 import com.ubanillx.smartclass.model.dto.friendrequest.FriendRequestQueryRequest;
-import com.ubanillx.smartclass.model.dto.friendrequest.FriendRequestUpdateRequest;
 import com.ubanillx.smartclass.model.entity.FriendRequest;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.vo.FriendRequestVO;
@@ -29,7 +28,7 @@ import java.util.List;
  * 好友申请接口
  */
 @RestController
-@RequestMapping("/friend/request")
+@RequestMapping("/friend-requests")
 @Slf4j
 public class FriendRequestController {
 
@@ -42,11 +41,11 @@ public class FriendRequestController {
     /**
      * 发送好友申请
      *
-     * @param friendRequestAddRequest
-     * @param request
-     * @return
+     * @param friendRequestAddRequest 好友申请创建请求，包含接收者ID和申请消息
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 好友申请ID
      */
-    @PostMapping("/add")
+    @PostMapping
     public BaseResponse<Long> addFriendRequest(@RequestBody FriendRequestAddRequest friendRequestAddRequest,
                                          HttpServletRequest request) {
         if (friendRequestAddRequest == null) {
@@ -73,12 +72,12 @@ public class FriendRequestController {
     /**
      * 接受好友申请
      *
-     * @param id
-     * @param request
-     * @return
+     * @param id 好友申请ID，路径参数
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 是否接受成功
      */
-    @PostMapping("/accept")
-    public BaseResponse<Boolean> acceptFriendRequest(@RequestParam Long id, HttpServletRequest request) {
+    @PostMapping("/{id}/accept")
+    public BaseResponse<Boolean> acceptFriendRequest(@PathVariable Long id, HttpServletRequest request) {
         if (id == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -90,12 +89,12 @@ public class FriendRequestController {
     /**
      * 拒绝好友申请
      *
-     * @param id
-     * @param request
-     * @return
+     * @param id 好友申请ID，路径参数
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 是否拒绝成功
      */
-    @PostMapping("/reject")
-    public BaseResponse<Boolean> rejectFriendRequest(@RequestParam Long id, HttpServletRequest request) {
+    @PostMapping("/{id}/reject")
+    public BaseResponse<Boolean> rejectFriendRequest(@PathVariable Long id, HttpServletRequest request) {
         if (id == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -104,49 +103,16 @@ public class FriendRequestController {
         return ResultUtils.success(result);
     }
 
-    /**
-     * 更新好友申请
-     *
-     * @param friendRequestUpdateRequest
-     * @param request
-     * @return
-     */
-    @PostMapping("/update")
-    public BaseResponse<Boolean> updateFriendRequest(@RequestBody FriendRequestUpdateRequest friendRequestUpdateRequest,
-                                              HttpServletRequest request) {
-        if (friendRequestUpdateRequest == null || friendRequestUpdateRequest.getId() == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        
-        // 参数校验
-        Long id = friendRequestUpdateRequest.getId();
-        String status = friendRequestUpdateRequest.getStatus();
-        
-        // 权限校验
-        FriendRequest friendRequest = friendRequestService.getById(id);
-        if (friendRequest == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-        }
-        
-        // 获取当前登录用户，非管理员只能处理自己收到的好友申请
-        User loginUser = userService.getLoginUser(request);
-        if (!userService.isAdmin(loginUser) && !loginUser.getId().equals(friendRequest.getReceiverId())) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权更新该好友申请");
-        }
-        
-        boolean result = friendRequestService.updateFriendRequestStatus(id, status);
-        return ResultUtils.success(result);
-    }
 
     /**
      * 根据 id 获取好友申请
      *
-     * @param id
-     * @param request
-     * @return
+     * @param id 好友申请ID，路径参数
+     * @param request HTTP请求，用于获取当前登录用户信息和权限验证
+     * @return 好友申请VO对象
      */
-    @GetMapping("/get")
-    public BaseResponse<FriendRequestVO> getFriendRequestById(long id, HttpServletRequest request) {
+    @GetMapping("/{id}")
+    public BaseResponse<FriendRequestVO> getFriendRequestById(@PathVariable long id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -171,9 +137,9 @@ public class FriendRequestController {
     /**
      * 获取我收到的好友申请
      *
-     * @param status
-     * @param request
-     * @return
+     * @param status 好友申请状态，查询参数，可为空，为空时获取所有状态的申请
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 好友申请VO列表
      */
     @GetMapping("/received")
     public BaseResponse<List<FriendRequestVO>> getReceivedFriendRequests(
@@ -188,9 +154,9 @@ public class FriendRequestController {
     /**
      * 获取我发送的好友申请
      *
-     * @param status
-     * @param request
-     * @return
+     * @param status 好友申请状态，查询参数，可为空，为空时获取所有状态的申请
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 好友申请VO列表
      */
     @GetMapping("/sent")
     public BaseResponse<List<FriendRequestVO>> getSentFriendRequests(
@@ -203,13 +169,13 @@ public class FriendRequestController {
     }
 
     /**
-     * 分页查询好友申请
+     * 分页查询好友申请（管理员专用）
      *
-     * @param friendRequestQueryRequest
-     * @param request
-     * @return
+     * @param friendRequestQueryRequest 好友申请查询请求，包含分页参数和查询条件
+     * @param request HTTP请求，用于获取当前登录用户信息和权限验证
+     * @return 好友申请分页结果
      */
-    @PostMapping("/list/page")
+    @GetMapping("/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<FriendRequest>> listFriendRequestByPage(@RequestBody FriendRequestQueryRequest friendRequestQueryRequest,
                                                     HttpServletRequest request) {
@@ -230,11 +196,11 @@ public class FriendRequestController {
     /**
      * 分页获取好友申请VO
      *
-     * @param friendRequestQueryRequest
-     * @param request
-     * @return
+     * @param friendRequestQueryRequest 好友申请查询请求，包含分页参数、查询条件和排序方式
+     * @param request HTTP请求，用于获取当前登录用户信息和权限验证
+     * @return 好友申请VO分页结果
      */
-    @PostMapping("/list/page/vo")
+    @GetMapping("/page/vo")
     public BaseResponse<Page<FriendRequestVO>> listFriendRequestVOByPage(@RequestBody FriendRequestQueryRequest friendRequestQueryRequest,
                                                       HttpServletRequest request) {
         if (friendRequestQueryRequest == null) {
@@ -288,17 +254,15 @@ public class FriendRequestController {
     /**
      * 删除好友申请
      *
-     * @param deleteRequest
-     * @param request
-     * @return
+     * @param id 好友申请ID，路径参数
+     * @param request HTTP请求，用于获取当前登录用户信息和权限验证
+     * @return 是否删除成功
      */
-    @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteFriendRequest(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+    @DeleteMapping("/{id}")
+    public BaseResponse<Boolean> deleteFriendRequest(@PathVariable Long id, HttpServletRequest request) {
+        if (id == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        
-        long id = deleteRequest.getId();
         
         // 权限校验
         FriendRequest friendRequest = friendRequestService.getById(id);
@@ -326,10 +290,10 @@ public class FriendRequestController {
     /**
      * 获取用户收到的待处理好友申请数量
      *
-     * @param request
-     * @return
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 待处理的好友申请数量
      */
-    @GetMapping("/count/pending")
+    @GetMapping("/pending/count")
     public BaseResponse<Long> getPendingRequestCount(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         

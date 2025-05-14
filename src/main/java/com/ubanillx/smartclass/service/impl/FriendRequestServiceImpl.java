@@ -123,7 +123,8 @@ public class FriendRequestServiceImpl extends ServiceImpl<FriendRequestMapper, F
         }
         
         // 更新好友申请状态为已接受
-        boolean updateResult = updateFriendRequestStatus(id, FriendRequestConstant.STATUS_ACCEPTED);
+        friendRequest.setStatus(FriendRequestConstant.STATUS_ACCEPTED);
+        boolean updateResult = updateById(friendRequest);
         if (!updateResult) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "接受好友申请失败");
         }
@@ -167,24 +168,7 @@ public class FriendRequestServiceImpl extends ServiceImpl<FriendRequestMapper, F
         }
         
         // 更新好友申请状态为已拒绝
-        return updateFriendRequestStatus(id, FriendRequestConstant.STATUS_REJECTED);
-    }
-
-    @Override
-    public boolean updateFriendRequestStatus(Long id, String status) {
-        // 参数校验
-        if (id == null || StringUtils.isBlank(status)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数不能为空");
-        }
-        
-        // 获取好友申请
-        FriendRequest friendRequest = getById(id);
-        if (friendRequest == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "好友申请不存在");
-        }
-        
-        // 更新状态
-        friendRequest.setStatus(status);
+        friendRequest.setStatus(FriendRequestConstant.STATUS_REJECTED);
         return updateById(friendRequest);
     }
 
