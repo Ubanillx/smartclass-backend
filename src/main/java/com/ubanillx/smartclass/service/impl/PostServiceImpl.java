@@ -230,6 +230,72 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
+    public Page<Post> searchFromEs(String searchText) {
+        if (StringUtils.isBlank(searchText)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "搜索词不能为空");
+        }
+        
+        // 默认分页参数
+        long current = 1;
+        long pageSize = 10;
+        
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        // 过滤已删除的帖子
+        boolQueryBuilder.filter(QueryBuilders.termQuery("isDelete", 0));
+        
+        // 按关键词检索
+        boolQueryBuilder.should(QueryBuilders.matchQuery("title", searchText));
+        boolQueryBuilder.should(QueryBuilders.matchQuery("description", searchText));
+        boolQueryBuilder.should(QueryBuilders.matchQuery("content", searchText));
+        boolQueryBuilder.minimumShouldMatch(1);
+        
+        // 排序默认按相关度
+        SortBuilder<?> sortBuilder = SortBuilders.scoreSort();
+        
+        // 分页
+        PageRequest pageRequest = PageRequest.of((int) (current - 1), (int) pageSize);
+        
+        // 构造查询
+        NativeSearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(boolQueryBuilder)
+                .withPageable(pageRequest)
+                .withSorts(sortBuilder)
+                .build();
+                
+        SearchHits<PostEsDTO> searchHits = elasticsearchRestTemplate.search(searchQuery, PostEsDTO.class);
+        Page<Post> page = new Page<>();
+        page.setTotal(searchHits.getTotalHits());
+        List<Post> resourceList = new ArrayList<>();
+        
+        // 查出结果后，从 db 获取最新动态数据
+        if (searchHits.hasSearchHits()) {
+            List<SearchHit<PostEsDTO>> searchHitList = searchHits.getSearchHits();
+            List<Long> postIdList = searchHitList.stream()
+                    .map(searchHit -> searchHit.getContent().getId())
+                    .collect(Collectors.toList());
+                    
+            List<Post> postList = baseMapper.selectBatchIds(postIdList);
+            if (postList != null) {
+                Map<Long, List<Post>> idPostMap = postList.stream()
+                        .collect(Collectors.groupingBy(Post::getId));
+                        
+                postIdList.forEach(postId -> {
+                    if (idPostMap.containsKey(postId)) {
+                        resourceList.add(idPostMap.get(postId).get(0));
+                    } else {
+                        // 从 es 清空 db 已物理删除的数据
+                        String delete = elasticsearchRestTemplate.delete(String.valueOf(postId), PostEsDTO.class);
+                        log.info("delete post {}", delete);
+                    }
+                });
+            }
+        }
+        
+        page.setRecords(resourceList);
+        return page;
+    }
+
+    @Override
     public PostVO getPostVO(Post post, HttpServletRequest request) {
         PostVO postVO = PostVO.objToVo(post);
         long postId = post.getId();

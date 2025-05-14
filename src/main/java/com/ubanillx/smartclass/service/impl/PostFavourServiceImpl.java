@@ -14,7 +14,6 @@ import com.ubanillx.smartclass.model.entity.PostFavour;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.service.PostFavourService;
 import com.ubanillx.smartclass.service.PostService;
-import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,25 +36,84 @@ public class PostFavourServiceImpl extends ServiceImpl<PostFavourMapper, PostFav
     private PostFavourMapper postFavourMapper;
 
     /**
-     * 帖子收藏
+     * 添加帖子收藏
      *
-     * @param postId    帖子id
-     * @param loginUser 登录用户
-     * @return 收藏结果
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     * @return 是否成功
      */
     @Override
-    public int doPostFavour(long postId, User loginUser) {
-        // 判断是否存在
+    @Transactional(rollbackFor = Exception.class)
+    public boolean addPostFavour(long postId, long userId) {
+        // 判断帖子是否存在
         Post post = postService.getById(postId);
         if (post == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
-        // 是否已帖子收藏
-        long userId = loginUser.getId();
-        // 每个用户串行帖子收藏
-        // 锁必须要包裹住事务方法
-        PostFavourService postFavourService = (PostFavourService) AopContext.currentProxy();
-        return postFavourService.doPostFavourInner(userId, postId);
+        // 判断是否已经收藏
+        if (hasFavour(postId, userId)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "已经收藏过该帖子");
+        }
+        // 添加收藏
+        PostFavour postFavour = new PostFavour();
+        postFavour.setUserId(userId);
+        postFavour.setPostId(postId);
+        boolean result = this.save(postFavour);
+        if (result) {
+            // 收藏数 + 1
+            postMapper.updateFavourNum(postId, 1);
+            return true;
+        } else {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+    }
+
+    /**
+     * 取消帖子收藏
+     *
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     * @return 是否成功
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean cancelPostFavour(long postId, long userId) {
+        // 判断帖子是否存在
+        Post post = postService.getById(postId);
+        if (post == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        // 判断是否已经收藏
+        if (!hasFavour(postId, userId)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "尚未收藏该帖子");
+        }
+        // 取消收藏
+        QueryWrapper<PostFavour> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("postId", postId);
+        queryWrapper.eq("userId", userId);
+        boolean result = this.remove(queryWrapper);
+        if (result) {
+            // 收藏数 - 1
+            postMapper.updateFavourNum(postId, -1);
+            return true;
+        } else {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+    }
+
+    /**
+     * 判断用户是否已收藏帖子
+     *
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     * @return 是否已收藏
+     */
+    @Override
+    public boolean hasFavour(long postId, long userId) {
+        QueryWrapper<PostFavour> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("postId", postId);
+        queryWrapper.eq("userId", userId);
+        return this.count(queryWrapper) > 0;
     }
 
     /**
@@ -72,45 +130,6 @@ public class PostFavourServiceImpl extends ServiceImpl<PostFavourMapper, PostFav
             return new Page<>();
         }
         return postFavourMapper.listFavourPostByPage(page, queryWrapper, favourUserId);
-    }
-
-    /**
-     * 封装了事务的帖子收藏方法
-     *
-     * @param userId 用户id
-     * @param postId 帖子id
-     * @return 收藏结果
-     */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public int doPostFavourInner(long userId, long postId) {
-        PostFavour postFavour = new PostFavour();
-        postFavour.setUserId(userId);
-        postFavour.setPostId(postId);
-        QueryWrapper<PostFavour> postFavourQueryWrapper = new QueryWrapper<>(postFavour);
-        PostFavour oldPostFavour = this.getOne(postFavourQueryWrapper);
-        boolean result;
-        // 已收藏
-        if (oldPostFavour != null) {
-            result = this.remove(postFavourQueryWrapper);
-            if (result) {
-                // 收藏数 - 1
-                postMapper.updateFavourNum(postId, -1);
-                return -1;
-            } else {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR);
-            }
-        } else {
-            // 未收藏
-            result = this.save(postFavour);
-            if (result) {
-                // 收藏数 + 1
-                postMapper.updateFavourNum(postId, 1);
-                return 1;
-            } else {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR);
-            }
-        }
     }
 }
 

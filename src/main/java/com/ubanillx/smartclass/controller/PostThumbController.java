@@ -5,23 +5,19 @@ import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.common.ResultUtils;
 import com.ubanillx.smartclass.exception.BusinessException;
 import com.ubanillx.smartclass.model.dto.postthumb.PostThumbAddRequest;
-import com.ubanillx.smartclass.model.entity.PostThumb;
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.service.PostThumbService;
 import com.ubanillx.smartclass.service.UserService;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 帖子点赞接口
 */
 @RestController
-@RequestMapping("/post_thumb")
+@RequestMapping("/post-thumbs")
 @Slf4j
 public class PostThumbController {
 
@@ -32,14 +28,14 @@ public class PostThumbController {
     private UserService userService;
 
     /**
-     * 点赞 / 取消点赞
+     * 点赞帖子
      *
-     * @param postThumbAddRequest
-     * @param request
-     * @return resultNum 本次点赞变化数
+     * @param postThumbAddRequest 点赞请求
+     * @param request 请求
+     * @return 点赞结果
      */
-    @PostMapping("/")
-    public BaseResponse<Integer> doThumb(@RequestBody PostThumbAddRequest postThumbAddRequest,
+    @PostMapping
+    public BaseResponse<Boolean> addThumb(@RequestBody PostThumbAddRequest postThumbAddRequest,
             HttpServletRequest request) {
         if (postThumbAddRequest == null || postThumbAddRequest.getPostId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -47,7 +43,26 @@ public class PostThumbController {
         // 登录才能点赞
         final User loginUser = userService.getLoginUser(request);
         long postId = postThumbAddRequest.getPostId();
-        int result = postThumbService.doPostThumb(postId, loginUser);
+        boolean result = postThumbService.addPostThumb(postId, loginUser.getId());
+        return ResultUtils.success(result);
+    }
+    
+    /**
+     * 取消点赞帖子
+     *
+     * @param postId 帖子ID
+     * @param request 请求
+     * @return 取消点赞结果
+     */
+    @DeleteMapping("/{postId}")
+    public BaseResponse<Boolean> cancelThumb(@PathVariable("postId") Long postId,
+            HttpServletRequest request) {
+        if (postId == null || postId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 登录才能取消点赞
+        final User loginUser = userService.getLoginUser(request);
+        boolean result = postThumbService.cancelPostThumb(postId, loginUser.getId());
         return ResultUtils.success(result);
     }
 
@@ -58,8 +73,8 @@ public class PostThumbController {
      * @param request HTTP请求
      * @return 是否已点赞
      */
-    @PostMapping("/has_thumb")
-    public BaseResponse<Boolean> hasThumb(Long postId, HttpServletRequest request) {
+    @GetMapping("/{postId}")
+    public BaseResponse<Boolean> hasThumb(@PathVariable("postId") Long postId, HttpServletRequest request) {
         if (postId == null || postId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -67,11 +82,7 @@ public class PostThumbController {
         final User loginUser = userService.getLoginUser(request);
         long userId = loginUser.getId();
         // 判断是否已点赞
-        boolean result = postThumbService.lambdaQuery()
-                .eq(PostThumb::getPostId, postId)
-                .eq(PostThumb::getUserId, userId)
-                .count() > 0;
+        boolean result = postThumbService.hasThumb(postId, userId);
         return ResultUtils.success(result);
     }
-
 }
