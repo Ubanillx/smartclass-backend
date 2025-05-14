@@ -28,7 +28,7 @@ import javax.servlet.http.HttpServletRequest;
  * 帖子评论回复接口
  */
 @RestController
-@RequestMapping("/post_comment_reply")
+@RequestMapping("/post-comment-replies")
 @Slf4j
 public class PostCommentReplyController {
 
@@ -45,7 +45,7 @@ public class PostCommentReplyController {
      * @param request                   HTTP请求
      * @return 回复ID
      */
-    @PostMapping("/add")
+    @PostMapping("")
     public BaseResponse<Long> addPostCommentReply(@RequestBody PostCommentReplyAddRequest postCommentReplyAddRequest,
                                           HttpServletRequest request) {
         if (postCommentReplyAddRequest == null) {
@@ -79,19 +79,18 @@ public class PostCommentReplyController {
     /**
      * 删除评论回复
      *
-     * @param deleteRequest 删除请求
-     * @param request       HTTP请求
+     * @param id 回复ID
+     * @param request HTTP请求
      * @return 是否成功
      */
-    @PostMapping("/delete")
-    public BaseResponse<Boolean> deletePostCommentReply(@RequestBody DeleteRequest deleteRequest,
+    @DeleteMapping("/{id}")
+    public BaseResponse<Boolean> deletePostCommentReply(@PathVariable("id") Long id,
                                                HttpServletRequest request) {
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+        if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         
         User loginUser = userService.getLoginUser(request);
-        long id = deleteRequest.getId();
         
         boolean result = postCommentReplyService.deletePostCommentReply(id, loginUser);
         return ResultUtils.success(result);
@@ -104,8 +103,8 @@ public class PostCommentReplyController {
      * @param request                     HTTP请求
      * @return 回复分页
      */
-    @PostMapping("/list/page")
-    public BaseResponse<Page<PostCommentReplyVO>> listPostCommentReplyByPage(@RequestBody PostCommentReplyQueryRequest postCommentReplyQueryRequest,
+    @GetMapping("/page")
+    public BaseResponse<Page<PostCommentReplyVO>> listPostCommentReplyByPage(PostCommentReplyQueryRequest postCommentReplyQueryRequest,
                                                               HttpServletRequest request) {
         if (postCommentReplyQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -130,8 +129,8 @@ public class PostCommentReplyController {
      * @param request HTTP请求
      * @return 回复
      */
-    @GetMapping("/get")
-    public BaseResponse<PostCommentReplyVO> getPostCommentReplyById(long id, HttpServletRequest request) {
+    @GetMapping("/{id}")
+    public BaseResponse<PostCommentReplyVO> getPostCommentReplyById(@PathVariable("id") Long id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -147,17 +146,16 @@ public class PostCommentReplyController {
     /**
      * 管理员删除评论回复
      *
-     * @param deleteRequest 删除请求
+     * @param id 回复ID
      * @return 是否成功
      */
-    @PostMapping("/admin/delete")
+    @DeleteMapping("/{id}/admin")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> adminDeletePostCommentReply(@RequestBody DeleteRequest deleteRequest) {
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+    public BaseResponse<Boolean> adminDeletePostCommentReply(@PathVariable("id") Long id) {
+        if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         
-        long id = deleteRequest.getId();
         PostCommentReply postCommentReply = postCommentReplyService.getById(id);
         if (postCommentReply == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
