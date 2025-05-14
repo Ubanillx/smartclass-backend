@@ -29,7 +29,7 @@ import java.util.List;
  * 用户反馈回复接口
  */
 @RestController
-@RequestMapping("/user/feedback/reply")
+@RequestMapping("/user-feedback-replies")
 @Slf4j
 public class UserFeedbackReplyController {
 
@@ -45,11 +45,11 @@ public class UserFeedbackReplyController {
     /**
      * 添加反馈回复
      *
-     * @param userFeedbackReplyAddRequest
-     * @param request
-     * @return
+     * @param userFeedbackReplyAddRequest 反馈回复创建请求，包含反馈ID和回复内容
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 新创建的反馈回复ID
      */
-    @PostMapping("/add")
+    @PostMapping("")
     public BaseResponse<Long> addReply(@RequestBody UserFeedbackReplyAddRequest userFeedbackReplyAddRequest,
                                   HttpServletRequest request) {
         if (userFeedbackReplyAddRequest == null) {
@@ -92,11 +92,11 @@ public class UserFeedbackReplyController {
     /**
      * 获取反馈的所有回复
      *
-     * @param feedbackId
-     * @param request
-     * @return
+     * @param feedbackId 反馈ID，用于查询指定反馈下的所有回复
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 反馈回复VO列表，包含发送者信息和回复内容
      */
-    @GetMapping("/list")
+    @GetMapping("")
     public BaseResponse<List<UserFeedbackReplyVO>> listReplies(@RequestParam("feedbackId") Long feedbackId,
                                                       HttpServletRequest request) {
         if (feedbackId == null || feedbackId <= 0) {
@@ -132,13 +132,13 @@ public class UserFeedbackReplyController {
     /**
      * 分页获取反馈回复
      *
-     * @param userFeedbackReplyQueryRequest
-     * @param request
-     * @return
+     * @param userFeedbackReplyQueryRequest 查询请求，包含分页参数和过滤条件
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 反馈回复VO分页结果，包含回复列表和分页信息
      */
-    @PostMapping("/list/page")
+    @GetMapping("/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<UserFeedbackReplyVO>> listReplyByPage(@RequestBody UserFeedbackReplyQueryRequest userFeedbackReplyQueryRequest,
+    public BaseResponse<Page<UserFeedbackReplyVO>> listReplyByPage(UserFeedbackReplyQueryRequest userFeedbackReplyQueryRequest,
                                                   HttpServletRequest request) {
         if (userFeedbackReplyQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -158,12 +158,12 @@ public class UserFeedbackReplyController {
     /**
      * 标记反馈回复为已读
      *
-     * @param replyId
-     * @param request
-     * @return
+     * @param replyId 需要标记为已读的反馈回复ID
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 标记操作是否成功
      */
-    @PostMapping("/read")
-    public BaseResponse<Boolean> markAsRead(@RequestParam("replyId") Long replyId, HttpServletRequest request) {
+    @PutMapping("/{replyId}/read")
+    public BaseResponse<Boolean> markAsRead(@PathVariable("replyId") Long replyId, HttpServletRequest request) {
         if (replyId == null || replyId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }

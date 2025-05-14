@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ubanillx.smartclass.annotation.AuthCheck;
 import com.ubanillx.smartclass.common.BaseResponse;
-import com.ubanillx.smartclass.common.DeleteRequest;
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.common.ResultUtils;
 import com.ubanillx.smartclass.constant.UserConstant;
@@ -18,7 +17,6 @@ import com.ubanillx.smartclass.model.dto.userfeedbackreply.UserFeedbackReplyAddR
 import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.entity.UserFeedback;
 import com.ubanillx.smartclass.model.entity.UserFeedbackReply;
-import com.ubanillx.smartclass.model.vo.UserFeedbackReplyVO;
 import com.ubanillx.smartclass.service.UserFeedbackReplyService;
 import com.ubanillx.smartclass.service.UserFeedbackService;
 import com.ubanillx.smartclass.service.UserService;
@@ -35,7 +33,7 @@ import java.util.List;
  * 用户反馈接口
  */
 @RestController
-@RequestMapping("/user/feedback")
+@RequestMapping("/user-feedbacks")
 @Slf4j
 public class UserFeedbackController {
 
@@ -51,11 +49,12 @@ public class UserFeedbackController {
     /**
      * 创建用户反馈
      *
-     * @param userFeedbackAddRequest
-     * @param request
-     * @return
+     * @param userFeedbackAddRequest 用户反馈创建请求体，包含反馈标题、内容、类型等信息
+     * @param request HTTP请求对象，用于获取当前登录用户信息
+     * @return 创建成功的反馈ID
+     * @throws BusinessException 参数错误时抛出异常
      */
-    @PostMapping("/add")
+    @PostMapping
     public BaseResponse<Long> addUserFeedback(@RequestBody UserFeedbackAddRequest userFeedbackAddRequest,
                                         HttpServletRequest request) {
         if (userFeedbackAddRequest == null) {
@@ -73,17 +72,17 @@ public class UserFeedbackController {
     /**
      * 删除用户反馈
      *
-     * @param deleteRequest
-     * @param request
-     * @return
+     * @param id 要删除的反馈ID
+     * @param request HTTP请求对象，用于获取当前登录用户信息和权限验证
+     * @return 删除操作结果，true表示成功，false表示失败
+     * @throws BusinessException 参数错误、未找到数据或无权限时抛出异常
      */
-    @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteUserFeedback(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+    @DeleteMapping("/{id}")
+    public BaseResponse<Boolean> deleteUserFeedback(@PathVariable("id") Long id, HttpServletRequest request) {
+        if (id == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User user = userService.getLoginUser(request);
-        long id = deleteRequest.getId();
         // 判断是否存在
         UserFeedback oldUserFeedback = userFeedbackService.getById(id);
         ThrowUtils.throwIf(oldUserFeedback == null, ErrorCode.NOT_FOUND_ERROR);
@@ -98,22 +97,25 @@ public class UserFeedbackController {
     /**
      * 更新用户反馈（仅管理员和自己）
      *
-     * @param userFeedbackUpdateRequest
-     * @param request
-     * @return
+     * @param id 要更新的反馈ID
+     * @param userFeedbackUpdateRequest 用户反馈更新请求体，包含要更新的反馈信息
+     * @param request HTTP请求对象，用于获取当前登录用户信息和权限验证
+     * @return 更新操作结果，true表示成功，false表示失败
+     * @throws BusinessException 参数错误、未找到数据或无权限时抛出异常
      */
-    @PostMapping("/update")
-    public BaseResponse<Boolean> updateUserFeedback(@RequestBody UserFeedbackUpdateRequest userFeedbackUpdateRequest,
+    @PutMapping("/{id}")
+    public BaseResponse<Boolean> updateUserFeedback(@PathVariable("id") Long id, 
+                                      @RequestBody UserFeedbackUpdateRequest userFeedbackUpdateRequest,
                                       HttpServletRequest request) {
-        if (userFeedbackUpdateRequest == null || userFeedbackUpdateRequest.getId() <= 0) {
+        if (userFeedbackUpdateRequest == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User user = userService.getLoginUser(request);
         UserFeedback userFeedback = new UserFeedback();
         BeanUtils.copyProperties(userFeedbackUpdateRequest, userFeedback);
+        userFeedback.setId(id);
         
         // 判断是否存在
-        long id = userFeedbackUpdateRequest.getId();
         UserFeedback oldUserFeedback = userFeedbackService.getById(id);
         ThrowUtils.throwIf(oldUserFeedback == null, ErrorCode.NOT_FOUND_ERROR);
         
@@ -127,14 +129,15 @@ public class UserFeedbackController {
     }
 
     /**
-     * 根据 id 获取
+     * 根据ID获取用户反馈详情
      *
-     * @param id
-     * @param request
-     * @return
+     * @param id 反馈ID
+     * @param request HTTP请求对象，用于获取当前登录用户信息和权限验证
+     * @return 用户反馈详情
+     * @throws BusinessException 参数错误、未找到数据或无权限时抛出异常
      */
-    @GetMapping("/get")
-    public BaseResponse<UserFeedback> getUserFeedbackById(long id, HttpServletRequest request) {
+    @GetMapping("/{id}")
+    public BaseResponse<UserFeedback> getUserFeedbackById(@PathVariable("id") Long id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -155,12 +158,13 @@ public class UserFeedbackController {
     /**
      * 分页获取用户反馈列表
      *
-     * @param userFeedbackQueryRequest
-     * @param request
-     * @return
+     * @param userFeedbackQueryRequest 查询条件，包含分页参数、排序、过滤条件等
+     * @param request HTTP请求对象，用于获取当前登录用户信息和权限验证
+     * @return 分页用户反馈列表
+     * @throws BusinessException 参数错误或分页参数超出限制时抛出异常
      */
-    @PostMapping("/list/page")
-    public BaseResponse<Page<UserFeedback>> listUserFeedbackByPage(@RequestBody UserFeedbackQueryRequest userFeedbackQueryRequest,
+    @GetMapping("/page")
+    public BaseResponse<Page<UserFeedback>> listUserFeedbackByPage(UserFeedbackQueryRequest userFeedbackQueryRequest,
                                              HttpServletRequest request) {
         if (userFeedbackQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -172,32 +176,51 @@ public class UserFeedbackController {
             userFeedbackQueryRequest.setUserId(loginUser.getId());
         }
         
-        long current = userFeedbackQueryRequest.getCurrent();
-        long size = userFeedbackQueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        // 验证分页参数
+        int current = (int)userFeedbackQueryRequest.getCurrent();
+        int size = (int)userFeedbackQueryRequest.getPageSize();
         
+        // 检查分页参数合法性
+        if (current <= 0) {
+            current = 1;
+            userFeedbackQueryRequest.setCurrent(current);
+        }
+        if (size <= 0) {
+            size = 10;
+            userFeedbackQueryRequest.setPageSize(size);
+        }
+        
+        // 限制爬虫，防止请求过大分页
+        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR, "页面大小不能超过20");
+        
+        // 构建分页对象
+        Page<UserFeedback> page = new Page<>(current, size);
+        
+        // 执行分页查询
         Page<UserFeedback> userFeedbackPage = userFeedbackService.getUserFeedbackPage(userFeedbackQueryRequest);
+        
         return ResultUtils.success(userFeedbackPage);
     }
 
     /**
      * 管理员处理用户反馈
      *
-     * @param userFeedbackProcessRequest
-     * @param request
-     * @return
+     * @param id 要处理的反馈ID
+     * @param userFeedbackProcessRequest 处理请求体，包含处理状态等信息
+     * @param request HTTP请求对象，用于获取当前管理员信息
+     * @return 处理操作结果，true表示成功，false表示失败
+     * @throws BusinessException 参数错误、权限不足或反馈不存在时抛出异常
      */
-    @PostMapping("/process")
+    @PutMapping("/{id}/process")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> processUserFeedback(@RequestBody UserFeedbackProcessRequest userFeedbackProcessRequest,
+    public BaseResponse<Boolean> processUserFeedback(@PathVariable("id") Long id,
+                                      @RequestBody UserFeedbackProcessRequest userFeedbackProcessRequest,
                                       HttpServletRequest request) {
-        if (userFeedbackProcessRequest == null || userFeedbackProcessRequest.getId() <= 0) {
+        if (userFeedbackProcessRequest == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         
         User admin = userService.getLoginUser(request);
-        Long id = userFeedbackProcessRequest.getId();
         Integer status = userFeedbackProcessRequest.getStatus();
         
         boolean result = userFeedbackService.processFeedback(id, admin.getId(), status);
@@ -207,27 +230,28 @@ public class UserFeedbackController {
     /**
      * 管理员处理用户反馈并回复
      *
-     * @param userFeedbackReplyAddRequest
-     * @param request
-     * @return
+     * @param id 要处理的反馈ID
+     * @param userFeedbackReplyAddRequest 回复请求体，包含回复内容等信息
+     * @param request HTTP请求对象，用于获取当前管理员信息
+     * @return 创建的回复ID
+     * @throws BusinessException 参数错误、权限不足或反馈不存在时抛出异常
      */
-    @PostMapping("/process/reply")
+    @PostMapping("/{id}/reply")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Long> processAndReply(@RequestBody UserFeedbackReplyAddRequest userFeedbackReplyAddRequest,
+    public BaseResponse<Long> processAndReply(@PathVariable("id") Long id,
+                                        @RequestBody UserFeedbackReplyAddRequest userFeedbackReplyAddRequest,
                                         HttpServletRequest request) {
         if (userFeedbackReplyAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         
         User admin = userService.getLoginUser(request);
-        Long feedbackId = userFeedbackReplyAddRequest.getFeedbackId();
+        userFeedbackReplyAddRequest.setFeedbackId(id);
         
         // 校验反馈是否存在
-        UserFeedback userFeedback = userFeedbackService.getById(feedbackId);
+        UserFeedback userFeedback = userFeedbackService.getById(id);
         ThrowUtils.throwIf(userFeedback == null, ErrorCode.NOT_FOUND_ERROR, "反馈不存在");
         
-        // 设置反馈状态为已处理
-        userFeedback.setStatus(2); // 2-已处理
         userFeedback.setAdminId(admin.getId());
         userFeedback.setProcessTime(new Date());
         userFeedback.setUpdateTime(new Date());
@@ -246,10 +270,11 @@ public class UserFeedbackController {
     /**
      * 获取用户未读回复数量
      *
-     * @param request
-     * @return
+     * @param request HTTP请求对象，用于获取当前登录用户信息和角色判断
+     * @return 未读回复数量
+     * @throws BusinessException 用户未登录时抛出异常
      */
-    @GetMapping("/unread/count")
+    @GetMapping("/unread-count")
     public BaseResponse<Long> getUnreadCount(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         
