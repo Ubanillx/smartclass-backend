@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ubanillx.smartclass.common.BaseResponse;
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.common.ResultUtils;
-import com.ubanillx.smartclass.model.dto.DeleteRequest;
 import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarAddRequest;
 import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarQueryRequest;
 import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarUpdateRequest;
@@ -129,6 +128,41 @@ public class AiAvatarController {
     }
 
     /**
+     * 管理员更新AI分身
+     *
+     * @param id 要更新的资源ID
+     * @param aiAvatar ai分身完整实体
+     * @param request 请求体
+     * @return baseResponse
+     */
+    @PutMapping("/{id}/admin")
+    public BaseResponse<Boolean> updateAiAvatarAdmin(@PathVariable("id") Long id, 
+            @RequestBody AiAvatar aiAvatar,
+            HttpServletRequest request) {
+        if (aiAvatar == null || id <= 0) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+        }
+        
+        // 设置ID
+        aiAvatar.setId(id);
+        
+        // 参数校验
+        User loginUser = userService.getLoginUser(request);
+        if (!userService.isAdmin(loginUser)) {
+            return ResultUtils.error(ErrorCode.NO_AUTH_ERROR);
+        }
+        
+        // 判断是否存在
+        AiAvatar oldAiAvatar = aiAvatarService.getById(id);
+        if (oldAiAvatar == null) {
+            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR);
+        }
+        
+        boolean result = aiAvatarService.updateById(aiAvatar);
+        return ResultUtils.success(result);
+    }
+
+    /**
      * 根据 id 获取AI分身
      *
      * @param id ai分身id
@@ -155,7 +189,7 @@ public class AiAvatarController {
      * @return baseResponse
      */
     @GetMapping("/admin")
-    public BaseResponse<List<AiAvatarVO>> listAiAvatar(AiAvatarQueryRequest aiAvatarQueryRequest) {
+    public BaseResponse<List<AiAvatar>> listAiAvatar(AiAvatarQueryRequest aiAvatarQueryRequest) {
         if (aiAvatarQueryRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
@@ -164,12 +198,7 @@ public class AiAvatarController {
         
         QueryWrapper<AiAvatar> queryWrapper = new QueryWrapper<>(aiAvatarQuery);
         List<AiAvatar> aiAvatarList = aiAvatarService.list(queryWrapper);
-        List<AiAvatarVO> aiAvatarVOList = aiAvatarList.stream().map(aiAvatar -> {
-            AiAvatarVO aiAvatarVO = new AiAvatarVO();
-            BeanUtils.copyProperties(aiAvatar, aiAvatarVO);
-            return aiAvatarVO;
-        }).collect(Collectors.toList());
-        return ResultUtils.success(aiAvatarVOList);
+        return ResultUtils.success(aiAvatarList);
     }
 
     /**
@@ -208,5 +237,35 @@ public class AiAvatarController {
         }).collect(Collectors.toList());
         aiAvatarVOPage.setRecords(aiAvatarVOList);
         return ResultUtils.success(aiAvatarVOPage);
+    }
+    
+    /**
+     * 管理员分页获取列表
+     *
+     * @param aiAvatarQueryRequest ai查询请求
+     * @return baseResponse
+     */
+    @GetMapping("/admin/page")
+    public BaseResponse<Page<AiAvatar>> listAiAvatarByPageAdmin(AiAvatarQueryRequest aiAvatarQueryRequest) {
+        if (aiAvatarQueryRequest == null) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+        }
+        AiAvatar aiAvatarQuery = new AiAvatar();
+        BeanUtils.copyProperties(aiAvatarQueryRequest, aiAvatarQuery);
+        long current = aiAvatarQueryRequest.getCurrent();
+        long size = aiAvatarQueryRequest.getPageSize();
+        String sortField = aiAvatarQueryRequest.getSortField();
+        String sortOrder = aiAvatarQueryRequest.getSortOrder();
+        
+        // 限制爬虫
+        if (size > 50) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+        }
+        
+        QueryWrapper<AiAvatar> queryWrapper = new QueryWrapper<>(aiAvatarQuery);
+        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), "ascend".equals(sortOrder), sortField);
+        Page<AiAvatar> aiAvatarPage = aiAvatarService.page(new Page<>(current, size), queryWrapper);
+        
+        return ResultUtils.success(aiAvatarPage);
     }
 } 
