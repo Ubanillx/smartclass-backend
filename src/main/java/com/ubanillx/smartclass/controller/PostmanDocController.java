@@ -5,16 +5,16 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.ubanillx.smartclass.common.BaseResponse;
+import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.common.ResultUtils;
 import com.ubanillx.smartclass.config.WebSocketEndpointConfig;
+import com.ubanillx.smartclass.exception.BusinessException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,18 +34,15 @@ import java.util.*;
 /**
  * Postman 接口文档控制器
  * 用于生成Postman Collection文件，支持REST和WebSocket接口调试
+ *
+ * @author ubanillx
  */
 @RestController
-@RequestMapping("/doc")
+@RequestMapping("/postman-collections")
 @Api(tags = "接口文档")
 @Slf4j
 public class PostmanDocController {
 
-    @Resource
-    private ApplicationContext applicationContext;
-
-    @Resource
-    private Environment environment;
     
     @Autowired
     @Qualifier("requestMappingHandlerMapping")
@@ -65,62 +62,55 @@ public class PostmanDocController {
 
     /**
      * 生成Postman Collection文件
+     *
+     * @param request HTTP请求
+     * @return Postman Collection文件响应
      */
-    @GetMapping("/postman-collection")
+    @GetMapping
     @ApiOperation(value = "导出Postman Collection", notes = "生成可导入Postman的接口文档，包含REST和WebSocket接口")
     public ResponseEntity<Object> generatePostmanCollection(HttpServletRequest request) {
+        log.info("开始生成Postman Collection文件");
         try {
             String host = getBaseUrl(request);
             
-            // 创建 Collection 根对象
+            // 创建Collection对象
             JSONObject collection = new JSONObject();
             collection.put("info", createInfo());
             
-            // 获取所有项目中的接口
+            // 添加HTTP和WebSocket接口
             List<JSONObject> items = new ArrayList<>();
-            
-            // 添加HTTP接口
-            JSONObject httpFolder = new JSONObject();
-            httpFolder.put("name", "HTTP接口");
-            httpFolder.put("description", "RESTful API接口");
-            httpFolder.put("item", getHttpEndpoints(host));
-            items.add(httpFolder);
-            
-            // 添加WebSocket接口
-            JSONObject wsFolder = new JSONObject();
-            wsFolder.put("name", "WebSocket接口");
-            wsFolder.put("description", "实时通信WebSocket接口");
-            wsFolder.put("item", getWebSocketEndpoints(host));
-            items.add(wsFolder);
+            items.add(createHttpFolder(host));
+            items.add(createWebSocketFolder(host));
             
             collection.put("item", items);
-            
-            // 添加全局变量
             collection.put("variable", createGlobalVariables(host));
             
-            // 设置响应头，以便浏览器下载文件
+            // 设置响应头
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=smartclass-postman-collection.json");
             
-            // 将JSON格式化后返回
+            // 格式化输出
             String jsonOutput = JSON.toJSONString(collection, SerializerFeature.PrettyFormat);
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(jsonOutput);
+            log.info("Postman Collection文件生成成功");
+            return ResponseEntity.ok().headers(headers).body(jsonOutput);
             
         } catch (Exception e) {
             log.error("生成Postman Collection失败", e);
-            return ResponseEntity.status(500).body("生成Postman Collection失败: " + e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成Postman Collection失败: " + e.getMessage());
         }
     }
     
     /**
-     * 获取服务器基础URL
+     * 获取服务器信息
+     *
+     * @param request HTTP请求
+     * @return 服务器信息
      */
-    @GetMapping("/server-info")
+    @GetMapping("/server")
     @ApiOperation(value = "获取服务器信息", notes = "返回服务器Host、Port等信息，用于Postman配置")
     public BaseResponse<Map<String, String>> getServerInfo(HttpServletRequest request) {
+        log.info("获取服务器信息");
         Map<String, String> result = new HashMap<>();
         try {
             String baseUrl = getBaseUrl(request);
@@ -128,16 +118,55 @@ public class PostmanDocController {
             result.put("apiBase", baseUrl + contextPath);
             result.put("wsUrl", "ws://" + getHostAddress() + ":" + websocketPort + "/ws");
             
+            log.info("获取服务器信息成功: {}", result);
             return ResultUtils.success(result);
         } catch (Exception e) {
             log.error("获取服务器信息失败", e);
-            result.put("error", e.getMessage());
-            return ResultUtils.success(result);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "获取服务器信息失败: " + e.getMessage());
         }
     }
     
     /**
+     * 提供WebSocket接口列表
+     *
+     * @return WebSocket接口列表响应
+     */
+    @GetMapping("/websocket-endpoints")
+    @ApiOperation(value = "获取WebSocket接口列表", notes = "返回所有注册的WebSocket消息类型及其接口定义")
+    public BaseResponse<List<Map<String, Object>>> listWebSocketEndpoints() {
+        log.info("获取WebSocket接口列表");
+        List<Map<String, Object>> endpointsList = new ArrayList<>();
+        
+        for (Map.Entry<String, WebSocketEndpointConfig.WebSocketEndpointDefinition> entry : webSocketEndpoints.entrySet()) {
+            Map<String, Object> endpoint = new HashMap<>();
+            endpoint.put("type", entry.getKey());
+            endpoint.put("name", entry.getValue().getName());
+            endpoint.put("description", entry.getValue().getDescription());
+            endpoint.put("exampleRequest", entry.getValue().getExampleRequest());
+            endpointsList.add(endpoint);
+        }
+        
+        log.info("获取WebSocket接口列表成功，共 {} 个接口", endpointsList.size());
+        return ResultUtils.success(endpointsList);
+    }
+    
+    /**
+     * 动态生成Postman Collection文件
+     *
+     * @param request HTTP请求
+     * @return Postman Collection文件响应
+     */
+    @GetMapping("/dynamic")
+    @ApiOperation(value = "动态生成Postman Collection", notes = "实时生成最新的Postman Collection文件，包含最新的REST和WebSocket接口")
+    public ResponseEntity<Object> generateDynamicPostmanCollection(HttpServletRequest request) {
+        log.info("开始动态生成Postman Collection文件");
+        return generatePostmanCollection(request);
+    }
+    
+    /**
      * 创建Collection信息
+     *
+     * @return Collection信息对象
      */
     private JSONObject createInfo() {
         JSONObject info = new JSONObject();
@@ -149,9 +178,37 @@ public class PostmanDocController {
     }
     
     /**
-     * 获取HTTP接口
+     * 创建HTTP接口文件夹
+     *
+     * @return HTTP接口文件夹对象
      */
-    private JSONArray getHttpEndpoints(String host) {
+    private JSONObject createHttpFolder(String host) {
+        JSONObject httpFolder = new JSONObject();
+        httpFolder.put("name", "HTTP接口");
+        httpFolder.put("description", "RESTful API接口");
+        httpFolder.put("item", getHttpEndpoints());
+        return httpFolder;
+    }
+    
+    /**
+     * 创建WebSocket接口文件夹
+     *
+     * @return WebSocket接口文件夹对象
+     */
+    private JSONObject createWebSocketFolder(String host) {
+        JSONObject wsFolder = new JSONObject();
+        wsFolder.put("name", "WebSocket接口");
+        wsFolder.put("description", "实时通信WebSocket接口");
+        wsFolder.put("item", getWebSocketEndpoints());
+        return wsFolder;
+    }
+    
+    /**
+     * 获取HTTP接口
+     *
+     * @return HTTP接口列表
+     */
+    private JSONArray getHttpEndpoints() {
         JSONArray items = new JSONArray();
         
         // 获取所有HTTP接口
@@ -240,8 +297,10 @@ public class PostmanDocController {
     
     /**
      * 获取WebSocket接口
+     *
+     * @return WebSocket接口列表
      */
-    private JSONArray getWebSocketEndpoints(String host) {
+    private JSONArray getWebSocketEndpoints() {
         JSONArray items = new JSONArray();
         
         // WebSocket连接示例
@@ -298,6 +357,9 @@ public class PostmanDocController {
     
     /**
      * 创建全局变量
+     *
+     * @param host 主机地址
+     * @return 全局变量列表
      */
     private JSONArray createGlobalVariables(String host) {
         JSONArray variables = new JSONArray();
@@ -335,9 +397,12 @@ public class PostmanDocController {
     
     /**
      * 获取HTTP方法
+     *
+     * @param mappingInfo 请求映射信息
+     * @return HTTP方法名称
      */
     private String getHttpMethod(RequestMappingInfo mappingInfo) {
-        if (mappingInfo.getMethodsCondition() != null && !mappingInfo.getMethodsCondition().getMethods().isEmpty()) {
+        if (!mappingInfo.getMethodsCondition().getMethods().isEmpty()) {
             return mappingInfo.getMethodsCondition().getMethods().iterator().next().name();
         }
         return "GET";
@@ -345,13 +410,16 @@ public class PostmanDocController {
     
     /**
      * 获取基础URL
+     *
+     * @param request HTTP请求
+     * @return 基础URL
      */
     private String getBaseUrl(HttpServletRequest request) {
         String scheme = request.getScheme();
         String serverName = request.getServerName();
         
         // 尝试获取真实IP，防止反向代理影响
-        if (serverName.equals("localhost") || serverName.equals("127.0.0.1")) {
+        if ("localhost".equals(serverName) || "127.0.0.1".equals(serverName)) {
             try {
                 serverName = getHostAddress();
             } catch (UnknownHostException e) {
@@ -364,37 +432,11 @@ public class PostmanDocController {
     
     /**
      * 获取主机地址
+     *
+     * @return 主机IP地址
+     * @throws UnknownHostException 如果无法确定主机地址
      */
     private String getHostAddress() throws UnknownHostException {
         return InetAddress.getLocalHost().getHostAddress();
-    }
-
-    /**
-     * 提供WebSocket接口列表
-     */
-    @GetMapping("/websocket-endpoints")
-    @ApiOperation(value = "获取WebSocket接口列表", notes = "返回所有注册的WebSocket消息类型及其接口定义")
-    public BaseResponse<List<Map<String, Object>>> getWebSocketEndpointsList() {
-        List<Map<String, Object>> endpointsList = new ArrayList<>();
-        
-        for (Map.Entry<String, WebSocketEndpointConfig.WebSocketEndpointDefinition> entry : webSocketEndpoints.entrySet()) {
-            Map<String, Object> endpoint = new HashMap<>();
-            endpoint.put("type", entry.getKey());
-            endpoint.put("name", entry.getValue().getName());
-            endpoint.put("description", entry.getValue().getDescription());
-            endpoint.put("exampleRequest", entry.getValue().getExampleRequest());
-            endpointsList.add(endpoint);
-        }
-        
-        return ResultUtils.success(endpointsList);
-    }
-    
-    /**
-     * 动态生成Postman Collection文件
-     */
-    @GetMapping("/postman-collection-dynamic")
-    @ApiOperation(value = "动态生成Postman Collection", notes = "实时生成最新的Postman Collection文件，包含最新的REST和WebSocket接口")
-    public ResponseEntity<Object> generateDynamicPostmanCollection(HttpServletRequest request) {
-        return generatePostmanCollection(request);
     }
 } 
