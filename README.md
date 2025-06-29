@@ -21,6 +21,7 @@
 ## 相关项目
 
 * **前端仓库**: [smartclass-frontend](https://github.com/Ubanillx/smartclass-frontend) - 基于Vue3的移动端应用
+* **管理端仓库** [smartclass-man-frontend](https://github.com/Ubanillx/smartclass-manage-frontend) - 基于Ant Design的管理中台
 
 ## 功能特点
 
@@ -28,7 +29,7 @@
 
 ![对话界面示意图](doc/对话1.jpg)
 
-* 基于Dify API的智能头像聊天系统
+* 基于Dify API的智能聊天系统
 * 支持流式响应和阻塞式响应
 * 聊天历史记录管理
 * 会话管理与总结
@@ -125,7 +126,7 @@ mvn spring-boot:run
 docker-compose up -d
 ```
 
-访问应用：`http://服务器IP地址:8101/api/doc.html`
+访问Knife4J接口文档：`http://服务器IP地址:8101/api/doc.html`
 
 ## 项目结构
 
@@ -168,7 +169,7 @@ src/
 
 ### AI对话模块 API
 
-* AI头像创建和管理
+* AI分身创建和管理
 * 会话创建与历史记录
 * 文本和语音交互
 
@@ -279,45 +280,3 @@ http://localhost:8101/api/doc.html
 - `user_status`: 用户在线状态更新事件
 - `system`: 系统通知事件
 
-### 前端使用示例
-```javascript
-// 建立SSE连接
-const eventSource = new EventSource('/chat/connect');
-
-// 监听不同类型的事件
-eventSource.addEventListener('chat', function(event) {
-  const message = JSON.parse(event.data);
-  console.log('收到新消息:', message);
-  // 处理新消息
-});
-
-eventSource.addEventListener('read_status', function(event) {
-  const readStatusUpdate = JSON.parse(event.data);
-  console.log('消息已读状态更新:', readStatusUpdate);
-  // 更新消息已读状态
-});
-
-eventSource.addEventListener('unread_count', function(event) {
-  const unreadCountData = JSON.parse(event.data);
-  console.log('未读消息数量更新:', unreadCountData.unreadCount);
-  // 更新未读消息计数显示
-});
-
-eventSource.addEventListener('user_status', function(event) {
-  const userStatusData = JSON.parse(event.data);
-  console.log('用户状态更新:', userStatusData);
-  // 更新用户在线状态
-});
-
-eventSource.addEventListener('system', function(event) {
-  const notification = JSON.parse(event.data);
-  console.log('系统通知:', notification);
-  // 显示系统通知
-});
-
-// 关闭连接（页面卸载前）
-window.addEventListener('beforeunload', function() {
-  fetch('/chat/disconnect', { method: 'POST' });
-  eventSource.close();
-});
-```
