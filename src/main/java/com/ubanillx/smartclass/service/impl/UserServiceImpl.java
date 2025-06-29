@@ -1,5 +1,6 @@
 package com.ubanillx.smartclass.service.impl;
 
+import static com.ubanillx.smartclass.constant.UserConstant.SALT;
 import static com.ubanillx.smartclass.constant.UserConstant.USER_LOGIN_STATE;
 
 import cn.hutool.core.collection.CollUtil;
@@ -16,28 +17,34 @@ import com.ubanillx.smartclass.model.vo.LoginUserVO;
 import com.ubanillx.smartclass.model.vo.UserVO;
 import com.ubanillx.smartclass.service.UserService;
 import com.ubanillx.smartclass.utils.SqlUtils;
+
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
+import java.util.concurrent.ThreadLocalRandom;
+
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
 /**
  * 用户服务实现
-*/
+ */
 @Service
 @Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
-    /**
-     * 盐值，混淆密码
-     */
-    public static final String SALT = "yupi";
+
+    // 新增一个用于注册时加锁的 map
+    private final ConcurrentHashMap<String, Object> registerLockMap = new ConcurrentHashMap<>();
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -51,32 +58,45 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
         }
-        // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
-        synchronized (userAccount.intern()) {
-            // 账户不能重复
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("userAccount", userAccount);
-            long count = this.baseMapper.selectCount(queryWrapper);
-            if (count > 0) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
+
+        // 获取或创建锁对象
+        Object lock = registerLockMap.computeIfAbsent(userAccount, k -> new Object());
+        synchronized (lock) {
+            try {
+                // 账户不能重复
+                QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("userAccount", userAccount);
+                long count = this.baseMapper.selectCount(queryWrapper);
+                if (count > 0) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
+                }
+
+                // 2. 加密
+                String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+
+                // 3. 插入数据
+                User user = new User();
+                user.setUserAccount(userAccount);
+                user.setUserPassword(encryptPassword);
+                boolean saveResult = this.save(user);
+                if (!saveResult) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
+                }
+                return user.getId();
+            } finally {
+                // 注册完成后移除锁对象，避免内存泄漏
+                registerLockMap.remove(userAccount);
             }
-            // 2. 加密
-            String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-            // 3. 插入数据
-            User user = new User();
-            user.setUserAccount(userAccount);
-            user.setUserPassword(encryptPassword);
-            boolean saveResult = this.save(user);
-            if (!saveResult) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
-            }
-            return user.getId();
         }
     }
 
+    // 在类中定义锁 map
+    private final Map<String, Object> phoneRegisterLockMap = new ConcurrentHashMap<>();
+
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public long userRegisterByPhone(String userPhone, String userPassword, String checkPassword) {
         // 1. 校验
@@ -89,63 +109,76 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
         }
-        // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
-        
-        synchronized (userPhone.intern()) {
-            // 手机号不能重复
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("userPhone", userPhone);
-            long count = this.baseMapper.selectCount(queryWrapper);
-            if (count > 0) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "该手机号已被注册");
+
+        // 加锁注册流程
+        Object lock = phoneRegisterLockMap.computeIfAbsent(userPhone, k -> new Object());
+        synchronized (lock) {
+            try {
+                // 手机号不能重复
+                QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("userPhone", userPhone);
+                long count = this.baseMapper.selectCount(queryWrapper);
+                if (count > 0) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "该手机号已被注册");
+                }
+
+                // 随机生成账号（最多尝试10次）
+                String userAccount = null;
+                int maxAttempts = 10;
+                boolean foundUnique = false;
+                QueryWrapper<User> accountQueryWrapper = new QueryWrapper<>();
+
+                for (int i = 0; i < maxAttempts; i++) {
+                    userAccount = generateRandomAccount();
+                    accountQueryWrapper.clear();
+                    accountQueryWrapper.eq("userAccount", userAccount);
+                    long accountCount = this.baseMapper.selectCount(accountQueryWrapper);
+                    if (accountCount == 0) {
+                        foundUnique = true;
+                        break;
+                    }
+                }
+
+                if (!foundUnique) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "无法生成唯一账号，请稍后重试");
+                }
+
+                // 加密密码
+                String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+
+                // 插入数据
+                User user = new User();
+                user.setUserAccount(userAccount);
+                user.setUserPhone(userPhone);
+                user.setUserPassword(encryptPassword);
+                boolean saveResult = this.save(user);
+                if (!saveResult) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
+                }
+                return user.getId();
+
+            } finally {
+                phoneRegisterLockMap.remove(userPhone);
             }
-            
-            // 随机生成10位字符串作为账号
-            String userAccount = generateRandomAccount(10);
-            
-            // 账户不能重复
-            QueryWrapper<User> accountQueryWrapper = new QueryWrapper<>();
-            accountQueryWrapper.eq("userAccount", userAccount);
-            long accountCount = this.baseMapper.selectCount(accountQueryWrapper);
-            
-            // 如果账号已存在，重新生成直到找到未使用的账号
-            while (accountCount > 0) {
-                userAccount = generateRandomAccount(10);
-                accountQueryWrapper = new QueryWrapper<>();
-                accountQueryWrapper.eq("userAccount", userAccount);
-                accountCount = this.baseMapper.selectCount(accountQueryWrapper);
-            }
-            
-            // 2. 加密
-            String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-            
-            // 3. 插入数据
-            User user = new User();
-            user.setUserAccount(userAccount);
-            user.setUserPhone(userPhone);
-            user.setUserPassword(encryptPassword);
-            boolean saveResult = this.save(user);
-            if (!saveResult) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
-            }
-            return user.getId();
         }
     }
-    
+
+
     /**
      * 生成指定长度的随机字符串作为账号
-     * 
-     * @param length 账号长度
+     *
      * @return 随机生成的账号
      */
-    private String generateRandomAccount(int length) {
+    private String generateRandomAccount() {
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            int index = (int) (Math.random() * characters.length());
+        StringBuilder sb = new StringBuilder(10);
+        for (int i = 0; i < 10; i++) {
+
+            int index = ThreadLocalRandom.current().nextInt(characters.length());
+
             sb.append(characters.charAt(index));
         }
         return sb.toString();
@@ -209,37 +242,57 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return this.getLoginUserVO(user);
     }
 
+    // 在类中定义锁 map
+    private final Map<String, Object> wxLoginLockMap = new ConcurrentHashMap<>();
+
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public LoginUserVO userLoginByMpOpen(WxOAuth2UserInfo wxOAuth2UserInfo, HttpServletRequest request) {
         String unionId = wxOAuth2UserInfo.getUnionId();
         String mpOpenId = wxOAuth2UserInfo.getOpenid();
-        // 单机锁
-        synchronized (unionId.intern()) {
-            // 查询用户是否已存在
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("unionId", unionId);
-            User user = this.getOne(queryWrapper);
-            // 被封号，禁止登录
-            if (user != null && UserRoleEnum.BAN.getValue().equals(user.getUserRole())) {
-                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "该用户已被封，禁止登录");
-            }
-            // 用户不存在则创建
-            if (user == null) {
-                user = new User();
-                user.setUnionId(unionId);
-                user.setMpOpenId(mpOpenId);
-                user.setUserAvatar(wxOAuth2UserInfo.getHeadImgUrl());
-                user.setUserName(wxOAuth2UserInfo.getNickname());
-                boolean result = this.save(user);
-                if (!result) {
-                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "登录失败");
+
+        if (StringUtils.isBlank(unionId)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "微信用户信息为空");
+        }
+
+        // 加锁注册流程
+        Object lock = wxLoginLockMap.computeIfAbsent(unionId, k -> new Object());
+        synchronized (lock) {
+            try {
+                // 查询用户是否已存在
+                QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("unionId", unionId);
+                User user = this.getOne(queryWrapper);
+
+                // 被封号，禁止登录
+                if (user != null && UserRoleEnum.BAN.getValue().equals(user.getUserRole())) {
+                    throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "该用户已被封，禁止登录");
                 }
+
+                // 用户不存在则创建
+                if (user == null) {
+                    user = new User();
+                    user.setUnionId(unionId);
+                    user.setMpOpenId(mpOpenId);
+                    user.setUserAvatar(wxOAuth2UserInfo.getHeadImgUrl());
+                    user.setUserName(wxOAuth2UserInfo.getNickname());
+
+                    boolean result = this.save(user);
+                    if (!result) {
+                        throw new BusinessException(ErrorCode.SYSTEM_ERROR, "登录失败，用户创建失败");
+                    }
+                }
+
+                // 记录用户的登录态
+                request.getSession().setAttribute(USER_LOGIN_STATE, user);
+                return getLoginUserVO(user);
+
+            } finally {
+                wxLoginLockMap.remove(unionId);
             }
-            // 记录用户的登录态
-            request.getSession().setAttribute(USER_LOGIN_STATE, user);
-            return getLoginUserVO(user);
         }
     }
+
 
     /**
      * 获取当前登录用户
@@ -334,6 +387,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
+        if (user.getBirthday() != null) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(user.getBirthday());
+            int birthYear = calendar.get(Calendar.YEAR);
+            userVO.setBirthdayYear(birthYear);
+        } else {
+            userVO.setBirthdayYear(0); // 或者按需设为默认值
+        }
         return userVO;
     }
 
@@ -346,27 +407,52 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public UserVO getUserVOById(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        User user = this.getById(userId);
+        return getUserVO(user);
+    }
+
+    @Override
     public QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest) {
         if (userQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
+
         Long id = userQueryRequest.getId();
-        String unionId = userQueryRequest.getUnionId();
-        String mpOpenId = userQueryRequest.getMpOpenId();
+        String userAccount = userQueryRequest.getUserAccount();
+        Integer userGender = userQueryRequest.getUserGender();
+        String userPhone = userQueryRequest.getUserPhone();
         String userName = userQueryRequest.getUserName();
-        String userProfile = userQueryRequest.getUserProfile();
         String userRole = userQueryRequest.getUserRole();
+        String userEmail = userQueryRequest.getUserEmail();
+        String wechatId = userQueryRequest.getWechatId();
+        int birthdayYear = userQueryRequest.getBirthdayYear();
         String sortField = userQueryRequest.getSortField();
         String sortOrder = userQueryRequest.getSortOrder();
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq(id != null, "id", id);
-        queryWrapper.eq(StringUtils.isNotBlank(unionId), "unionId", unionId);
-        queryWrapper.eq(StringUtils.isNotBlank(mpOpenId), "mpOpenId", mpOpenId);
         queryWrapper.eq(StringUtils.isNotBlank(userRole), "userRole", userRole);
-        queryWrapper.like(StringUtils.isNotBlank(userProfile), "userProfile", userProfile);
+        queryWrapper.eq(StringUtils.isNotBlank(userAccount), "userAccount", userAccount);
+        queryWrapper.eq(userGender != null, "userGender", userGender);
+        queryWrapper.eq(StringUtils.isNotBlank(userPhone), "userPhone", userPhone);
+        queryWrapper.eq(StringUtils.isNotBlank(userEmail), "userEmail", userEmail);
         queryWrapper.like(StringUtils.isNotBlank(userName), "userName", userName);
+        queryWrapper.like(StringUtils.isNotBlank(wechatId), "wechatId", wechatId);
+        queryWrapper.like(StringUtils.isNotBlank(userName), "userName", userName);
+        queryWrapper.apply(birthdayYear > 0, "YEAR(birthday) = {0}", birthdayYear);
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
                 sortField);
         return queryWrapper;
+    }
+
+    @Override
+    public List<User> getAllAdmins() {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userRole", UserRoleEnum.ADMIN.getValue());
+        queryWrapper.eq("isDelete", 0); // 未删除的用户
+        return this.list(queryWrapper);
     }
 }

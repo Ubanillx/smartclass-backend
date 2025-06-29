@@ -1,10 +1,12 @@
 package com.ubanillx.smartclass.model.vo;
 
 import cn.hutool.json.JSONUtil;
-import com.ubanillx.smartclass.model.entity.Post;
+
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+
+import com.ubanillx.smartclass.model.entity.Post;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
@@ -40,6 +42,11 @@ public class PostVO implements Serializable {
     private Integer favourNum;
 
     /**
+     * 评论数
+     */
+    private Integer commentNum;
+
+    /**
      * 创建用户 id
      */
     private Long userId;
@@ -53,6 +60,16 @@ public class PostVO implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+    
+    /**
+     * 国家
+     */
+    private String country;
+
+    /**
+     * 城市
+     */
+    private String city;
 
     /**
      * 标签列表

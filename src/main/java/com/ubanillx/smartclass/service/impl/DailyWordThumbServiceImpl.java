@@ -10,7 +10,6 @@ import com.ubanillx.smartclass.model.entity.User;
 import com.ubanillx.smartclass.model.entity.UserDailyWord;
 import com.ubanillx.smartclass.service.DailyWordService;
 import com.ubanillx.smartclass.service.DailyWordThumbService;
-import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,41 +25,26 @@ public class DailyWordThumbServiceImpl extends ServiceImpl<UserDailyWordMapper, 
 
     @Resource
     private DailyWordService dailyWordService;
-
+    
     /**
-     * 点赞/取消点赞单词
+     * 点赞单词
      *
-     * @param wordId
-     * @param loginUser
-     * @return
+     * @param wordId 单词id
+     * @param loginUser 当前登录用户
+     * @return 1-点赞成功，0-操作失败
      */
     @Override
-    public int doWordThumb(long wordId, User loginUser) {
+    @Transactional(rollbackFor = Exception.class)
+    public int thumbWord(long wordId, User loginUser) {
         // 判断单词是否存在
         DailyWord word = dailyWordService.getById(wordId);
         if (word == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "单词不存在");
         }
+        
         // 获取用户ID
         long userId = loginUser.getId();
-        // 每个用户串行点赞，避免并发问题
-        // 锁必须要包裹住事务方法
-        DailyWordThumbService wordThumbService = (DailyWordThumbService) AopContext.currentProxy();
-        synchronized (String.valueOf(userId).intern()) {
-            return wordThumbService.doWordThumbInner(userId, wordId);
-        }
-    }
-
-    /**
-     * 单词点赞（内部事务方法）
-     *
-     * @param userId
-     * @param wordId
-     * @return
-     */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public int doWordThumbInner(long userId, long wordId) {
+        
         // 查询用户与单词的关联记录
         QueryWrapper<UserDailyWord> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userId", userId);
@@ -88,25 +72,9 @@ public class DailyWordThumbServiceImpl extends ServiceImpl<UserDailyWordMapper, 
             }
         }
         
-        // 如果关联记录存在
+        // 如果关联记录存在但未点赞，则设置为点赞
         Integer isLiked = userDailyWord.getIsLiked();
-        
-        // 如果已点赞，则取消点赞
-        if (isLiked != null && isLiked == 1) {
-            userDailyWord.setIsLiked(0);
-            userDailyWord.setLikeTime(null);
-            userDailyWord.setUpdateTime(now);
-            boolean result = this.updateById(userDailyWord);
-            if (result) {
-                // 更新单词点赞数 -1
-                dailyWordService.decreaseLikeCount(wordId);
-                return -1;
-            } else {
-                return 0;
-            }
-        } 
-        // 如果未点赞，则设置为点赞
-        else {
+        if (isLiked == null || isLiked == 0) {
             userDailyWord.setIsLiked(1);
             userDailyWord.setLikeTime(now);
             userDailyWord.setUpdateTime(now);
@@ -115,10 +83,51 @@ public class DailyWordThumbServiceImpl extends ServiceImpl<UserDailyWordMapper, 
                 // 更新单词点赞数 +1
                 dailyWordService.increaseLikeCount(wordId);
                 return 1;
-            } else {
-                return 0;
             }
         }
+        
+        // 如果已经点赞，不做操作
+        return 0;
+    }
+    
+    /**
+     * 取消点赞单词
+     *
+     * @param wordId 单词id
+     * @param userId 用户id
+     * @return 1-取消点赞成功，0-操作失败
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int cancelThumbWord(long wordId, long userId) {
+        // 判断单词是否存在
+        DailyWord word = dailyWordService.getById(wordId);
+        if (word == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "单词不存在");
+        }
+        
+        // 查询用户与单词的关联记录
+        QueryWrapper<UserDailyWord> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        queryWrapper.eq("wordId", wordId);
+        UserDailyWord userDailyWord = this.getOne(queryWrapper);
+        
+        // 如果关联记录不存在或已经是未点赞状态，返回失败
+        if (userDailyWord == null || userDailyWord.getIsLiked() == 0) {
+            return 0;
+        }
+        
+        // 设置为未点赞
+        userDailyWord.setIsLiked(0);
+        userDailyWord.setLikeTime(null);
+        userDailyWord.setUpdateTime(new Date());
+        boolean result = this.updateById(userDailyWord);
+        if (result) {
+            // 更新单词点赞数 -1
+            dailyWordService.decreaseLikeCount(wordId);
+            return 1;
+        }
+        return 0;
     }
 
     /**

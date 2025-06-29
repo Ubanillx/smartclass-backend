@@ -9,6 +9,16 @@ import org.apache.commons.lang3.StringUtils;
 public class SqlUtils {
 
     /**
+     * 升序
+     */
+    public static final String SORT_ORDER_ASC = "asc";
+    
+    /**
+     * 降序
+     */
+    public static final String SORT_ORDER_DESC = "desc";
+
+    /**
      * 校验排序字段是否合法（防止 SQL 注入）
      *
      * @param sortField
@@ -31,7 +41,7 @@ public class SqlUtils {
      */
     public static <T> void setDefaultOrder(QueryWrapper<T> queryWrapper, String sortField, String sortOrder) {
         if (SqlUtils.validSortField(sortField)) {
-            queryWrapper.orderBy(true, "asc".equalsIgnoreCase(sortOrder), sortField);
+            queryWrapper.orderBy(true, SORT_ORDER_ASC.equalsIgnoreCase(sortOrder), sortField);
         }
     }
 }

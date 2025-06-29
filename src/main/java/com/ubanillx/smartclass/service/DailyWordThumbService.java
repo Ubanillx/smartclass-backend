@@ -8,24 +8,24 @@ import com.ubanillx.smartclass.model.entity.UserDailyWord;
  * 每日单词点赞服务
 */
 public interface DailyWordThumbService extends IService<UserDailyWord> {
-
+    
     /**
-     * 点赞/取消点赞单词
+     * 点赞单词
      *
-     * @param wordId
-     * @param loginUser
-     * @return 1-点赞，-1-取消点赞，0-失败
+     * @param wordId 单词id
+     * @param loginUser 当前登录用户
+     * @return 1-点赞成功，0-操作失败
      */
-    int doWordThumb(long wordId, User loginUser);
-
+    int thumbWord(long wordId, User loginUser);
+    
     /**
-     * 单词点赞（内部事务方法）
+     * 取消点赞单词
      *
-     * @param userId
-     * @param wordId
-     * @return 1-点赞，-1-取消点赞，0-失败
+     * @param wordId 单词id
+     * @param userId 用户id
+     * @return 1-取消点赞成功，0-操作失败
      */
-    int doWordThumbInner(long userId, long wordId);
+    int cancelThumbWord(long wordId, long userId);
 
     /**
      * 判断用户是否点赞了单词

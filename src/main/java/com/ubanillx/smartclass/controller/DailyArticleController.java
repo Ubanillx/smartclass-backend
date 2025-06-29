@@ -20,19 +20,17 @@ import com.ubanillx.smartclass.service.DailyArticleService;
 import com.ubanillx.smartclass.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
 import java.util.List;
 
 /**
  * 每日文章接口
  */
 @RestController
-@RequestMapping("/dailyArticle")
+@RequestMapping("/daily-articles")
 @Slf4j
 public class DailyArticleController {
 
@@ -42,16 +40,17 @@ public class DailyArticleController {
     @Resource
     private UserService userService;
 
+
     // region 增删改查
 
     /**
      * 创建每日文章（仅管理员）
      *
-     * @param dailyArticleAddRequest
-     * @param request
-     * @return
+     * @param dailyArticleAddRequest 每日文章创建请求体，包含文章标题、内容、类型等信息
+     * @param request HTTP请求，用于获取当前登录用户信息
+     * @return 新创建的每日文章ID
      */
-    @PostMapping("/add")
+    @PostMapping("")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Long> addDailyArticle(@RequestBody DailyArticleAddRequest dailyArticleAddRequest,
                                          HttpServletRequest request) {
@@ -62,64 +61,67 @@ public class DailyArticleController {
         BeanUtils.copyProperties(dailyArticleAddRequest, dailyArticle);
         User loginUser = userService.getLoginUser(request);
         Long adminId = loginUser.getId();
-        long id = dailyArticleService.addDailyArticle(dailyArticle, adminId);
-        return ResultUtils.success(id);
+        // 设置管理员ID
+        dailyArticle.setAdminId(adminId);
+        // 使用saveDailyArticle方法，同步到ES
+        boolean result = dailyArticleService.saveDailyArticle(dailyArticle);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(dailyArticle.getId());
     }
 
     /**
      * 删除每日文章（仅管理员）
      *
-     * @param deleteRequest
-     * @param request
-     * @return
+     * @param id 要删除的文章ID
+     * @return 删除操作是否成功
      */
-    @PostMapping("/delete")
+    @DeleteMapping("/{id}")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> deleteDailyArticle(@RequestBody DeleteRequest deleteRequest,
-                                              HttpServletRequest request) {
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+    public BaseResponse<Boolean> deleteDailyArticle(@PathVariable("id") Long id) {
+        if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long id = deleteRequest.getId();
         // 判断是否存在
         DailyArticle oldDailyArticle = dailyArticleService.getById(id);
         ThrowUtils.throwIf(oldDailyArticle == null, ErrorCode.NOT_FOUND_ERROR);
-        boolean b = dailyArticleService.removeById(id);
+        // 使用deleteDailyArticle方法，同步删除ES中的数据
+        boolean b = dailyArticleService.deleteDailyArticle(id);
         return ResultUtils.success(b);
     }
 
     /**
      * 更新每日文章（仅管理员）
      *
-     * @param dailyArticleUpdateRequest
-     * @param request
-     * @return
+     * @param id 文章ID
+     * @param dailyArticleUpdateRequest 文章更新请求体，包含需要更新的字段
+     * @return 更新操作是否成功
      */
-    @PostMapping("/update")
+    @PutMapping("/{id}")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updateDailyArticle(@RequestBody DailyArticleUpdateRequest dailyArticleUpdateRequest,
-                                              HttpServletRequest request) {
-        if (dailyArticleUpdateRequest == null || dailyArticleUpdateRequest.getId() <= 0) {
+    public BaseResponse<Boolean> updateDailyArticle(@PathVariable("id") Long id, 
+                                               @RequestBody DailyArticleUpdateRequest dailyArticleUpdateRequest) {
+        if (dailyArticleUpdateRequest == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        dailyArticleUpdateRequest.setId(id);
         DailyArticle dailyArticle = new DailyArticle();
         BeanUtils.copyProperties(dailyArticleUpdateRequest, dailyArticle);
         // 判断是否存在
-        long id = dailyArticleUpdateRequest.getId();
         DailyArticle oldDailyArticle = dailyArticleService.getById(id);
         ThrowUtils.throwIf(oldDailyArticle == null, ErrorCode.NOT_FOUND_ERROR);
-        boolean result = dailyArticleService.updateById(dailyArticle);
+        // 使用updateDailyArticle方法，同步更新ES中的数据
+        boolean result = dailyArticleService.updateDailyArticle(dailyArticle);
         return ResultUtils.success(result);
     }
 
     /**
      * 根据 id 获取每日文章
      *
-     * @param id
-     * @return
+     * @param id 文章ID
+     * @return 文章视图对象，包含文章详细信息
      */
-    @GetMapping("/get/vo")
-    public BaseResponse<DailyArticleVO> getDailyArticleVOById(long id) {
+    @GetMapping("/{id}")
+    public BaseResponse<DailyArticleVO> getDailyArticleVOById(@PathVariable("id") Long id) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -136,12 +138,12 @@ public class DailyArticleController {
     /**
      * 分页获取文章列表（仅管理员）
      *
-     * @param dailyArticleQueryRequest
-     * @return
+     * @param dailyArticleQueryRequest 查询请求参数，包含页码、每页大小、排序字段等
+     * @return 每日文章分页数据
      */
-    @PostMapping("/list/page")
+    @GetMapping("/admin/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<DailyArticle>> listDailyArticleByPage(@RequestBody DailyArticleQueryRequest dailyArticleQueryRequest) {
+    public BaseResponse<Page<DailyArticle>> listDailyArticleByPage(DailyArticleQueryRequest dailyArticleQueryRequest) {
         if (dailyArticleQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -157,11 +159,11 @@ public class DailyArticleController {
     /**
      * 分页获取文章列表（封装VO）
      *
-     * @param dailyArticleQueryRequest
-     * @return
+     * @param dailyArticleQueryRequest 查询请求参数，包含页码、每页大小、排序字段、搜索关键词等
+     * @return 每日文章VO对象的分页数据，包含更多展示信息
      */
-    @PostMapping("/list/page/vo")
-    public BaseResponse<Page<DailyArticleVO>> listDailyArticleVOByPage(@RequestBody DailyArticleQueryRequest dailyArticleQueryRequest) {
+    @GetMapping("/page")
+    public BaseResponse<Page<DailyArticleVO>> listDailyArticleVOByPage(DailyArticleQueryRequest dailyArticleQueryRequest) {
         if (dailyArticleQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -178,25 +180,9 @@ public class DailyArticleController {
     }
 
     /**
-     * 获取特定日期的文章
-     *
-     * @param date 日期 yyyy-MM-dd
-     * @return
-     */
-    @GetMapping("/date")
-    public BaseResponse<List<DailyArticleVO>> getDailyArticleByDate(
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
-        if (date == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        List<DailyArticleVO> dailyArticleVOList = dailyArticleService.getDailyArticleByDate(date);
-        return ResultUtils.success(dailyArticleVOList);
-    }
-
-    /**
      * 获取今日文章
      *
-     * @return 随机返回一篇最新的文章
+     * @return 随机选择的最新文章视图对象
      */
     @GetMapping("/today")
     public BaseResponse<DailyArticleVO> getTodayArticle() {
@@ -210,20 +196,22 @@ public class DailyArticleController {
     }
 
     /**
-     * 获取推荐文章
+     * 从ES搜索美文
      *
-     * @param category 分类
-     * @param difficulty 难度
-     * @param limit 返回数量限制
-     * @return
+     * @param searchText 搜索关键词，服务层会自动匹配文章的所有相关字段
+     * @return 符合搜索条件的文章视图对象分页结果
      */
-    @GetMapping("/recommend")
-    public BaseResponse<List<DailyArticleVO>> getRecommendArticles(
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) Integer difficulty,
-            @RequestParam(defaultValue = "10") Integer limit) {
-        List<DailyArticleVO> dailyArticleVOList = dailyArticleService.getRecommendArticles(category, difficulty, limit);
-        return ResultUtils.success(dailyArticleVOList);
+    @GetMapping("/search")
+    public BaseResponse<Page<DailyArticleVO>> searchDailyArticle(@RequestParam String searchText) {
+        if (searchText == null || searchText.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "搜索关键词不能为空");
+        }
+        // 调用服务层方法进行搜索，service层负责匹配所有字段
+        Page<DailyArticle> dailyArticlePage = dailyArticleService.searchFromEs(searchText);
+        Page<DailyArticleVO> dailyArticleVOPage = new Page<>(dailyArticlePage.getCurrent(), 
+                dailyArticlePage.getSize(), dailyArticlePage.getTotal());
+        List<DailyArticleVO> dailyArticleVOList = dailyArticleService.getDailyArticleVO(dailyArticlePage.getRecords());
+        dailyArticleVOPage.setRecords(dailyArticleVOList);
+        return ResultUtils.success(dailyArticleVOPage);
     }
-
 } 

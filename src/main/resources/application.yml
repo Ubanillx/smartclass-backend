@@ -31,11 +31,10 @@ spring:
     timeout: 5000
 #    password: 123456
   # Elasticsearch 配置
-  # todo 需替换配置，然后取消注释
-#  elasticsearch:
-#    uris: http://localhost:9200
-#    username: root
-#    password: 123456
+  elasticsearch:
+    uris: http://localhost:9200
+    username: 
+    password: 
   # 文件上传
   servlet:
     multipart:
@@ -54,7 +53,7 @@ server:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
   global-config:
     db-config:
       logic-delete-field: isDelete # 全局逻辑删除的实体字段名
@@ -117,8 +116,18 @@ dify:
   user-prefix: smartclass_user_
   enable-streaming-verbose-log: false
 
+# Netty WebSocket服务器配置
+netty:
+  websocket:
+    port: 12346
+    heartbeat-timeout: 60
+    auth-timeout: 10
+    max-connections: 10000
+
 # 日志配置
 logging:
   level:
     com.ubanillx.smartclass.service.impl.DifyServiceImpl: info
     com.ubanillx.smartclass.controller.AiAvatarChatController: info
+    com.ubanillx.smartclass.netty: debug
+    com.ubanillx.smartclass.service.impl.ChatMessageServiceImpl: debug

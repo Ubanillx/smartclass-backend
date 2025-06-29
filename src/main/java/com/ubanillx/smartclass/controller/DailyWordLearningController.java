@@ -40,7 +40,7 @@ public class DailyWordLearningController {
      * @param request
      * @return
      */
-    @PostMapping("/mark-studied/{wordId}")
+    @PostMapping("/{wordId}/study-status")
     public BaseResponse<Boolean> markWordAsStudied(@PathVariable("wordId") long wordId,
                                                   HttpServletRequest request) {
         if (wordId <= 0) {
@@ -59,6 +59,31 @@ public class DailyWordLearningController {
     }
 
     /**
+     * 取消标记单词为已学习
+     *
+     * @param wordId
+     * @param request
+     * @return
+     */
+    @DeleteMapping("/{wordId}/study-status")
+    public BaseResponse<Boolean> cancelWordStudied(@PathVariable("wordId") long wordId,
+                                                  HttpServletRequest request) {
+        if (wordId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 判断单词是否存在
+        DailyWord dailyWord = dailyWordService.getById(wordId);
+        if (dailyWord == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "单词不存在");
+        }
+        // 获取登录用户
+        User loginUser = userService.getLoginUser(request);
+        // 取消标记为已学习
+        boolean result = userDailyWordService.cancelWordStudied(wordId, loginUser.getId());
+        return ResultUtils.success(result);
+    }
+
+    /**
      * 更新单词掌握程度
      *
      * @param wordId
@@ -66,7 +91,7 @@ public class DailyWordLearningController {
      * @param request
      * @return
      */
-    @PostMapping("/update-mastery/{wordId}")
+    @PostMapping("/{wordId}/mastery")
     public BaseResponse<Boolean> updateMasteryLevel(@PathVariable("wordId") long wordId,
                                                    @RequestParam("masteryLevel") int masteryLevel,
                                                    HttpServletRequest request) {
@@ -96,7 +121,7 @@ public class DailyWordLearningController {
      * @param request
      * @return
      */
-    @PostMapping("/save-note/{wordId}")
+    @PostMapping("/{wordId}/note")
     public BaseResponse<Boolean> saveWordNote(@PathVariable("wordId") long wordId,
                                               @RequestParam("noteContent") String noteContent,
                                               HttpServletRequest request) {
@@ -125,7 +150,7 @@ public class DailyWordLearningController {
      * @param request
      * @return
      */
-    @GetMapping("/get/{wordId}")
+    @GetMapping("/{wordId}")
     public BaseResponse<UserDailyWord> getUserDailyWord(@PathVariable("wordId") long wordId,
                                                        HttpServletRequest request) {
         if (wordId <= 0) {

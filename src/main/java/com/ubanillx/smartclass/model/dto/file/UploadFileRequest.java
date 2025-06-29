@@ -10,11 +10,6 @@ import lombok.Data;
 public class UploadFileRequest implements Serializable {
 
     /**
-     * 业务
-     */
-    private String biz;
-
-    /**
      * 文件名称（可选）
      */
     private String filename;
@@ -23,11 +18,6 @@ public class UploadFileRequest implements Serializable {
      * 文件描述（可选）
      */
     private String description;
-
-    /**
-     * Base64编码的文件内容（可选）
-     */
-    private String base64Data;
 
     private static final long serialVersionUID = 1L;
 }

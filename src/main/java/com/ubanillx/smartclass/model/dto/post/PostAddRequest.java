@@ -24,6 +24,16 @@ public class PostAddRequest implements Serializable {
      * 标签列表
      */
     private List<String> tags;
+    
+    /**
+     * 客户端IP地址
+     */
+    private String clientIp;
+    
+    /**
+     * 帖子类型，如学习/生活/技巧
+     */
+    private String type;
 
     private static final long serialVersionUID = 1L;
 }

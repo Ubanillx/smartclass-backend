@@ -24,6 +24,15 @@ public interface DailyArticleFavourService extends IService<UserDailyArticle> {
     int doArticleFavour(long articleId, User loginUser);
 
     /**
+     * 取消收藏每日文章
+     *
+     * @param articleId 文章id
+     * @param userId 用户id
+     * @return 是否成功
+     */
+    int cancelArticleFavour(long articleId, long userId);
+
+    /**
      * 分页获取用户收藏的每日文章列表
      *
      * @param page

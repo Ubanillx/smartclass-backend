@@ -239,6 +239,73 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
     }
     
     @Override
+    public Page<AiAvatarChatHistory> getUserLatestMessagesPage(Long userId, long current, long size) {
+        if (userId == null) {
+            return new Page<>(current, size);
+        }
+        
+        // 获取用户的所有聊天历史记录中每个会话的最新消息
+        QueryWrapper<AiAvatarChatHistory> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId)
+                .select("MAX(id) as id")
+                .groupBy("sessionId")
+                .orderByDesc("MAX(createTime)");
+        
+        // 创建分页对象
+        Page<AiAvatarChatHistory> page = new Page<>(current, size);
+        
+        // 执行自定义SQL查询获取每个会话的最新消息的ID
+        String sql = "SELECT MAX(id) as id FROM ai_avatar_chat_history " +
+                "WHERE userId = " + userId + " GROUP BY sessionId ORDER BY MAX(createTime) DESC " +
+                "LIMIT " + ((current - 1) * size) + ", " + size;
+        
+        List<Object> idList = this.baseMapper.selectObjs(
+                new QueryWrapper<AiAvatarChatHistory>().select("MAX(id) as id")
+                .eq("userId", userId)
+                .groupBy("sessionId")
+                .orderByDesc("MAX(createTime)")
+                .last("LIMIT " + ((current - 1) * size) + ", " + size));
+        
+        if (idList.isEmpty()) {
+            // 返回空结果
+            return page;
+        }
+        
+        // 获取这些ID对应的记录
+        QueryWrapper<AiAvatarChatHistory> recordQuery = new QueryWrapper<>();
+        recordQuery.in("id", idList).orderByDesc("createTime");
+        List<AiAvatarChatHistory> records = this.list(recordQuery);
+        
+        // 设置记录和总数
+        page.setRecords(records);
+        
+        // 获取总记录数（会话数）
+        Long totalCount = 0L;
+        try {
+            // 查询不同会话的数量
+            Map<String, Object> countResult = this.baseMapper.selectMaps(
+                    new QueryWrapper<AiAvatarChatHistory>()
+                    .select("COUNT(DISTINCT sessionId) as count")
+                    .eq("userId", userId))
+                    .get(0);
+            
+            if (countResult != null && countResult.get("count") != null) {
+                // 根据数据库类型，count可能是Long、Integer或BigDecimal等
+                Object countObj = countResult.get("count");
+                if (countObj instanceof Number) {
+                    totalCount = ((Number) countObj).longValue();
+                }
+            }
+        } catch (Exception e) {
+            log.error("获取会话总数失败", e);
+        }
+        
+        page.setTotal(totalCount);
+        
+        return page;
+    }
+    
+    @Override
     public List<ChatSessionVO> getRecentSessions(Long userId, int limit) {
         if (userId == null) {
             return new ArrayList<>();
@@ -448,7 +515,7 @@ public class AiAvatarChatHistoryServiceImpl extends ServiceImpl<AiAvatarChatHist
             
             for (Map<String, Object> resultMap : resultMaps) {
                 String sessionId = (String) resultMap.get("sessionId");
-                if (StringUtils.isEmpty(sessionId)) {
+                if (StringUtils.hasLength(sessionId) == false) {
                     continue;
                 }
                 

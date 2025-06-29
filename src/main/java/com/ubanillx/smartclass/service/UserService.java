@@ -126,6 +126,14 @@ public interface UserService extends IService<User> {
      * @return
      */
     List<UserVO> getUserVO(List<User> userList);
+    
+    /**
+     * 根据用户ID获取脱敏的用户信息
+     *
+     * @param userId 用户ID
+     * @return 脱敏后的用户信息
+     */
+    UserVO getUserVOById(Long userId);
 
     /**
      * 获取查询条件
@@ -134,5 +142,12 @@ public interface UserService extends IService<User> {
      * @return
      */
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
+
+    /**
+     * 获取所有管理员用户
+     *
+     * @return 管理员用户列表
+     */
+    List<User> getAllAdmins();
 
 }

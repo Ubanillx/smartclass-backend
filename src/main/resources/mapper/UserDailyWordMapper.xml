@@ -12,8 +12,6 @@
             <result property="studyTime" column="studyTime" />
             <result property="isLiked" column="isLiked" />
             <result property="likeTime" column="likeTime" />
-            <result property="isCollected" column="isCollected" />
-            <result property="collectTime" column="collectTime" />
             <result property="noteContent" column="noteContent" />
             <result property="noteTime" column="noteTime" />
             <result property="masteryLevel" column="masteryLevel" />
@@ -22,21 +20,10 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,userId,wordId,isStudied,studyTime,isLiked,likeTime,isCollected,
-        collectTime,noteContent,noteTime,masteryLevel,createTime,
+        id,userId,wordId,isStudied,studyTime,isLiked,likeTime,
+        noteContent,noteTime,masteryLevel,createTime,
         updateTime
     </sql>
-    
-    <!-- 获取用户收藏的单词列表 -->
-    <select id="listFavourWordByPage" resultType="com.ubanillx.smartclass.model.entity.DailyWord">
-        select w.*
-        from daily_word w
-        join user_daily_word udw on w.id = udw.wordId
-        where udw.userId = #{favourUserId}
-        and udw.isCollected = 1
-        and w.isDelete = 0
-        ${ew.customSqlSegment}
-    </select>
     
     <!-- 获取用户点赞的单词列表 -->
     <select id="listThumbWordByPage" resultType="com.ubanillx.smartclass.model.entity.DailyWord">
@@ -48,4 +35,4 @@
         and w.isDelete = 0
         ${ew.customSqlSegment}
     </select>
-</mapper>
+</mapper> 

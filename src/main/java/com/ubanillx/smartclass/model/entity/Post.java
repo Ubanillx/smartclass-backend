@@ -3,7 +3,6 @@ package com.ubanillx.smartclass.model.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import java.util.Date;
@@ -11,15 +10,15 @@ import lombok.Data;
 
 /**
  * 帖子
-*/
-@TableName(value = "post")
+ * @TableName post
+ */
+@TableName(value ="post")
 @Data
 public class Post implements Serializable {
-
     /**
      * id
      */
-    @TableId(type = IdType.ASSIGN_ID)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
@@ -33,7 +32,7 @@ public class Post implements Serializable {
     private String content;
 
     /**
-     * 标签列表 json
+     * 标签列表（json 数组）
      */
     private String tags;
 
@@ -48,9 +47,24 @@ public class Post implements Serializable {
     private Integer favourNum;
 
     /**
+     * 评论数
+     */
+    private Integer commentNum;
+
+    /**
      * 创建用户 id
      */
     private Long userId;
+
+    /**
+     * 国家
+     */
+    private String country;
+
+    /**
+     * 城市
+     */
+    private String city;
 
     /**
      * 创建时间
@@ -65,8 +79,12 @@ public class Post implements Serializable {
     /**
      * 是否删除
      */
-    @TableLogic
     private Integer isDelete;
+
+    /**
+     * 帖子类型，如学习/生活/技巧
+     */
+    private String type;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

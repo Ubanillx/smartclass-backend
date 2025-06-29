@@ -58,6 +58,39 @@ public class DailyArticleFavourServiceImpl extends ServiceImpl<UserDailyArticleM
     }
 
     /**
+     * 取消收藏每日文章
+     *
+     * @param articleId 文章id
+     * @param userId 用户id
+     * @return 是否成功
+     */
+    @Override
+    public int cancelArticleFavour(long articleId, long userId) {
+        // 判断文章是否存在
+        DailyArticle article = dailyArticleService.getById(articleId);
+        if (article == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "文章不存在");
+        }
+        
+        // 查询用户与文章的关联记录
+        QueryWrapper<UserDailyArticle> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        queryWrapper.eq("articleId", articleId);
+        UserDailyArticle userDailyArticle = this.getOne(queryWrapper);
+        
+        // 如果关联记录不存在或已经是未收藏状态，返回失败
+        if (userDailyArticle == null || userDailyArticle.getIsCollected() == 0) {
+            return 0;
+        }
+        
+        // 设置为未收藏
+        userDailyArticle.setIsCollected(0);
+        userDailyArticle.setCollectTime(null);
+        boolean result = this.updateById(userDailyArticle);
+        return result ? 1 : 0;
+    }
+
+    /**
      * 分页获取用户收藏的每日文章列表
      *
      * @param page

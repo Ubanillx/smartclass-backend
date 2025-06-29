@@ -75,6 +75,16 @@ public interface AiAvatarChatHistoryService extends IService<AiAvatarChatHistory
     Page<AiAvatarChatHistory> getUserHistoryPage(Long userId, Long aiAvatarId, long current, long size);
     
     /**
+     * 获取用户每个会话的最新消息
+     *
+     * @param userId 用户ID
+     * @param current 当前页
+     * @param size 每页大小
+     * @return 每个会话最新消息的分页
+     */
+    Page<AiAvatarChatHistory> getUserLatestMessagesPage(Long userId, long current, long size);
+    
+    /**
      * 更新会话名称
      *
      * @param sessionId 会话ID

@@ -27,6 +27,11 @@ public class DailyArticleQueryRequest extends PageRequest implements Serializabl
      * 文章摘要（模糊查询）
      */
     private String summary;
+    
+    /**
+     * 文章内容（模糊查询）
+     */
+    private String content;
 
     /**
      * 作者

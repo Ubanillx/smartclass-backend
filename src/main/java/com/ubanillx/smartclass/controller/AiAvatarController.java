@@ -5,13 +5,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ubanillx.smartclass.common.BaseResponse;
 import com.ubanillx.smartclass.common.ErrorCode;
 import com.ubanillx.smartclass.common.ResultUtils;
-import com.ubanillx.smartclass.model.dto.DeleteRequest;
 import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarAddRequest;
 import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarQueryRequest;
 import com.ubanillx.smartclass.model.dto.aiavatar.AiAvatarUpdateRequest;
 import com.ubanillx.smartclass.model.entity.AiAvatar;
 import com.ubanillx.smartclass.model.entity.User;
-import com.ubanillx.smartclass.model.vo.AiAvatarBriefVO;
 import com.ubanillx.smartclass.model.vo.AiAvatarVO;
 import com.ubanillx.smartclass.service.AiAvatarService;
 import com.ubanillx.smartclass.service.UserService;
@@ -29,7 +27,7 @@ import java.util.stream.Collectors;
  * AI分身接口
  */
 @RestController
-@RequestMapping("/ai_avatar")
+@RequestMapping("/ai-avatars")
 @Slf4j
 public class AiAvatarController {
 
@@ -42,11 +40,11 @@ public class AiAvatarController {
     /**
      * 创建AI分身
      *
-     * @param aiAvatarAddRequest
-     * @param request
-     * @return
+     * @param aiAvatarAddRequest 添加请求
+     * @param request 请求体
+     * @return baseResponse
      */
-    @PostMapping("/add")
+    @PostMapping("")
     public BaseResponse<Long> addAiAvatar(@RequestBody AiAvatarAddRequest aiAvatarAddRequest, HttpServletRequest request) {
         if (aiAvatarAddRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
@@ -66,17 +64,16 @@ public class AiAvatarController {
     /**
      * 删除AI分身
      *
-     * @param deleteRequest
-     * @param request
-     * @return
+     * @param id 要删除的资源ID
+     * @param request 请求体
+     * @return baseResponse
      */
-    @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteAiAvatar(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+    @DeleteMapping("/{id}")
+    public BaseResponse<Boolean> deleteAiAvatar(@PathVariable("id") Long id, HttpServletRequest request) {
+        if (id <= 0) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);
-        long id = deleteRequest.getId();
         // 判断是否存在
         AiAvatar oldAiAvatar = aiAvatarService.getById(id);
         if (oldAiAvatar == null) {
@@ -93,20 +90,24 @@ public class AiAvatarController {
     /**
      * 更新AI分身
      *
-     * @param aiAvatarUpdateRequest
-     * @param request
-     * @return
+     * @param id 要更新的资源ID
+     * @param aiAvatarUpdateRequest ai更新请求
+     * @param request 请求体
+     * @return baseResponse
      */
-    @PostMapping("/update")
-    public BaseResponse<Boolean> updateAiAvatar(@RequestBody AiAvatarUpdateRequest aiAvatarUpdateRequest,
+    @PutMapping("/{id}")
+    public BaseResponse<Boolean> updateAiAvatar(@PathVariable("id") Long id, 
+            @RequestBody AiAvatarUpdateRequest aiAvatarUpdateRequest,
             HttpServletRequest request) {
-        if (aiAvatarUpdateRequest == null || aiAvatarUpdateRequest.getId() <= 0) {
+        if (aiAvatarUpdateRequest == null || id <= 0) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
         
+        // 设置ID
+        aiAvatarUpdateRequest.setId(id);
+        
         // 参数校验
         User loginUser = userService.getLoginUser(request);
-        long id = aiAvatarUpdateRequest.getId();
         
         // 判断是否存在
         AiAvatar oldAiAvatar = aiAvatarService.getById(id);
@@ -119,53 +120,42 @@ public class AiAvatarController {
             return ResultUtils.error(ErrorCode.NO_AUTH_ERROR);
         }
         
-        // 复制非空字段，实现增量更新
-        AiAvatar aiAvatar = new AiAvatar();
-        aiAvatar.setId(id); // 设置ID
+        // 交给service层处理增量更新字段转换
+        AiAvatar aiAvatar = aiAvatarService.createUpdateEntity(aiAvatarUpdateRequest);
         
-        // 增量更新每个字段，只有非null值才会被更新
-        if (aiAvatarUpdateRequest.getName() != null) {
-            aiAvatar.setName(aiAvatarUpdateRequest.getName());
+        boolean result = aiAvatarService.updateById(aiAvatar);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 管理员更新AI分身
+     *
+     * @param id 要更新的资源ID
+     * @param aiAvatar ai分身完整实体
+     * @param request 请求体
+     * @return baseResponse
+     */
+    @PutMapping("/{id}/admin")
+    public BaseResponse<Boolean> updateAiAvatarAdmin(@PathVariable("id") Long id, 
+            @RequestBody AiAvatar aiAvatar,
+            HttpServletRequest request) {
+        if (aiAvatar == null || id <= 0) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
         
-        if (aiAvatarUpdateRequest.getBaseUrl() != null) {
-            aiAvatar.setBaseUrl(aiAvatarUpdateRequest.getBaseUrl());
+        // 设置ID
+        aiAvatar.setId(id);
+        
+        // 参数校验
+        User loginUser = userService.getLoginUser(request);
+        if (!userService.isAdmin(loginUser)) {
+            return ResultUtils.error(ErrorCode.NO_AUTH_ERROR);
         }
         
-        if (aiAvatarUpdateRequest.getDescription() != null) {
-            aiAvatar.setDescription(aiAvatarUpdateRequest.getDescription());
-        }
-        
-        if (aiAvatarUpdateRequest.getAvatarImgUrl() != null) {
-            aiAvatar.setAvatarImgUrl(aiAvatarUpdateRequest.getAvatarImgUrl());
-        }
-        
-        if (aiAvatarUpdateRequest.getAvatarAuth() != null) {
-            aiAvatar.setAvatarAuth(aiAvatarUpdateRequest.getAvatarAuth());
-        }
-        
-        if (aiAvatarUpdateRequest.getTags() != null) {
-            aiAvatar.setTags(aiAvatarUpdateRequest.getTags());
-        }
-        
-        if (aiAvatarUpdateRequest.getPersonality() != null) {
-            aiAvatar.setPersonality(aiAvatarUpdateRequest.getPersonality());
-        }
-        
-        if (aiAvatarUpdateRequest.getAbilities() != null) {
-            aiAvatar.setAbilities(aiAvatarUpdateRequest.getAbilities());
-        }
-        
-        if (aiAvatarUpdateRequest.getIsPublic() != null) {
-            aiAvatar.setIsPublic(aiAvatarUpdateRequest.getIsPublic());
-        }
-        
-        if (aiAvatarUpdateRequest.getStatus() != null) {
-            aiAvatar.setStatus(aiAvatarUpdateRequest.getStatus());
-        }
-        
-        if (aiAvatarUpdateRequest.getSort() != null) {
-            aiAvatar.setSort(aiAvatarUpdateRequest.getSort());
+        // 判断是否存在
+        AiAvatar oldAiAvatar = aiAvatarService.getById(id);
+        if (oldAiAvatar == null) {
+            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR);
         }
         
         boolean result = aiAvatarService.updateById(aiAvatar);
@@ -175,11 +165,11 @@ public class AiAvatarController {
     /**
      * 根据 id 获取AI分身
      *
-     * @param id
-     * @return
+     * @param id ai分身id
+     * @return baseResponse
      */
-    @GetMapping("/get")
-    public BaseResponse<AiAvatarVO> getAiAvatarById(long id) {
+    @GetMapping("/{id}")
+    public BaseResponse<AiAvatarVO> getAiAvatarById(@PathVariable("id") Long id) {
         if (id <= 0) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
@@ -195,12 +185,11 @@ public class AiAvatarController {
     /**
      * 获取列表（仅管理员可使用）
      *
-     * @param aiAvatarQueryRequest
-     * @param request
-     * @return
+     * @param aiAvatarQueryRequest ai查询请求
+     * @return baseResponse
      */
-    @GetMapping("/list")
-    public BaseResponse<List<AiAvatarVO>> listAiAvatar(AiAvatarQueryRequest aiAvatarQueryRequest, HttpServletRequest request) {
+    @GetMapping("/admin")
+    public BaseResponse<List<AiAvatar>> listAiAvatar(AiAvatarQueryRequest aiAvatarQueryRequest) {
         if (aiAvatarQueryRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
@@ -209,23 +198,17 @@ public class AiAvatarController {
         
         QueryWrapper<AiAvatar> queryWrapper = new QueryWrapper<>(aiAvatarQuery);
         List<AiAvatar> aiAvatarList = aiAvatarService.list(queryWrapper);
-        List<AiAvatarVO> aiAvatarVOList = aiAvatarList.stream().map(aiAvatar -> {
-            AiAvatarVO aiAvatarVO = new AiAvatarVO();
-            BeanUtils.copyProperties(aiAvatar, aiAvatarVO);
-            return aiAvatarVO;
-        }).collect(Collectors.toList());
-        return ResultUtils.success(aiAvatarVOList);
+        return ResultUtils.success(aiAvatarList);
     }
 
     /**
      * 分页获取列表
      *
-     * @param aiAvatarQueryRequest
-     * @param request
-     * @return
+     * @param aiAvatarQueryRequest ai查询请求
+     * @return baseResponse
      */
-    @GetMapping("/list/page")
-    public BaseResponse<Page<AiAvatarVO>> listAiAvatarByPage(AiAvatarQueryRequest aiAvatarQueryRequest, HttpServletRequest request) {
+    @GetMapping("/page")
+    public BaseResponse<Page<AiAvatarVO>> listAiAvatarByPage(AiAvatarQueryRequest aiAvatarQueryRequest) {
         if (aiAvatarQueryRequest == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR);
         }
@@ -242,7 +225,7 @@ public class AiAvatarController {
         }
         
         QueryWrapper<AiAvatar> queryWrapper = new QueryWrapper<>(aiAvatarQuery);
-        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals("ascend"), sortField);
+        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), "ascend".equals(sortOrder), sortField);
         Page<AiAvatar> aiAvatarPage = aiAvatarService.page(new Page<>(current, size), queryWrapper);
         
         // 转换为VO
@@ -257,14 +240,32 @@ public class AiAvatarController {
     }
     
     /**
-     * 获取所有AI分身的简要信息列表
-     * 
-     * @return 所有AI分身的简要信息
+     * 管理员分页获取列表
+     *
+     * @param aiAvatarQueryRequest ai查询请求
+     * @return baseResponse
      */
-    @GetMapping("/list/all")
-    public BaseResponse<List<AiAvatarBriefVO>> listAllAiAvatar() {
-        List<AiAvatarBriefVO> aiAvatarBriefList = aiAvatarService.listAllAiAvatarBrief();
-        return ResultUtils.success(aiAvatarBriefList);
-    }
+    @GetMapping("/admin/page")
+    public BaseResponse<Page<AiAvatar>> listAiAvatarByPageAdmin(AiAvatarQueryRequest aiAvatarQueryRequest) {
+        if (aiAvatarQueryRequest == null) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+        }
+        AiAvatar aiAvatarQuery = new AiAvatar();
+        BeanUtils.copyProperties(aiAvatarQueryRequest, aiAvatarQuery);
+        long current = aiAvatarQueryRequest.getCurrent();
+        long size = aiAvatarQueryRequest.getPageSize();
+        String sortField = aiAvatarQueryRequest.getSortField();
+        String sortOrder = aiAvatarQueryRequest.getSortOrder();
         
+        // 限制爬虫
+        if (size > 50) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+        }
+        
+        QueryWrapper<AiAvatar> queryWrapper = new QueryWrapper<>(aiAvatarQuery);
+        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), "ascend".equals(sortOrder), sortField);
+        Page<AiAvatar> aiAvatarPage = aiAvatarService.page(new Page<>(current, size), queryWrapper);
+        
+        return ResultUtils.success(aiAvatarPage);
+    }
 } 

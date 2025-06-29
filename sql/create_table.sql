@@ -1,6 +1,4 @@
 # 数据库初始化
-
-
 -- 创建库
 create database if not exists smart_class;
 
@@ -34,20 +32,25 @@ create table if not exists user
 ) comment '用户' collate = utf8mb4_unicode_ci;
 
 -- 帖子表
-create table if not exists post
+CREATE TABLE IF NOT EXISTS post
 (
-    id         bigint auto_increment comment 'id' primary key,
-    title      varchar(512)                       null comment '标题',
-    content    text                               null comment '内容',
-    tags       varchar(1024)                      null comment '标签列表（json 数组）',
-    thumbNum   int      default 0                 not null comment '点赞数',
-    favourNum  int      default 0                 not null comment '收藏数',
-    userId     bigint                             not null comment '创建用户 id',
-    createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete   tinyint  default 0                 not null comment '是否删除',
-    index idx_userId (userId)
-) comment '帖子' collate = utf8mb4_unicode_ci;
+    id         BIGINT AUTO_INCREMENT COMMENT 'id' PRIMARY KEY,
+    title      VARCHAR(512)                       NULL COMMENT '标题',
+    content    TEXT                               NULL COMMENT '内容',
+    tags       VARCHAR(1024)                      NULL COMMENT '标签列表（json 数组）',
+    thumbNum   INT      DEFAULT 0                 NOT NULL COMMENT '点赞数',
+    favourNum  INT      DEFAULT 0                 NOT NULL COMMENT '收藏数',
+    commentNum INT      DEFAULT 0                 NOT NULL COMMENT '评论数',
+    userId     BIGINT                             NOT NULL COMMENT '创建用户 id',
+    country    VARCHAR(100)                       NULL COMMENT '国家',
+    city       VARCHAR(100)                       NULL COMMENT '城市',
+    createTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete   TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除',
+    type       VARCHAR(50)                        NOT NULL COMMENT '帖子类型，如学习/生活/技巧',
+    INDEX idx_userId (userId),
+    CONSTRAINT fk_post_user FOREIGN KEY (userId) REFERENCES user(id)
+) COMMENT '帖子' COLLATE = utf8mb4_unicode_ci;
 
 -- 帖子点赞表（硬删除）
 create table if not exists post_thumb
@@ -72,6 +75,45 @@ create table if not exists post_favour
     index idx_postId (postId),
     index idx_userId (userId)
 ) comment '帖子收藏';
+
+-- 帖子评论表
+CREATE TABLE IF NOT EXISTS post_comment
+(
+    id         BIGINT AUTO_INCREMENT COMMENT '评论ID' PRIMARY KEY,
+    postId     BIGINT                             NOT NULL COMMENT '帖子ID，关联到post表',
+    userId     BIGINT                             NOT NULL COMMENT '评论者ID，关联到user表',
+    content    TEXT                               NOT NULL COMMENT '评论内容',
+    country    VARCHAR(100)                       NULL COMMENT '国家',
+    city       VARCHAR(100)                       NULL COMMENT '城市',
+    createTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete   TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    INDEX idx_postId (postId),
+    INDEX idx_userId (userId),
+    CONSTRAINT fk_comment_post FOREIGN KEY (postId) REFERENCES post(id),
+    CONSTRAINT fk_comment_user FOREIGN KEY (userId) REFERENCES user(id)
+) COMMENT '帖子评论' COLLATE = utf8mb4_unicode_ci;
+
+-- 帖子评论回复表
+CREATE TABLE IF NOT EXISTS post_comment_reply
+(
+    id         BIGINT AUTO_INCREMENT COMMENT '回复ID' PRIMARY KEY,
+    postId     BIGINT                             NOT NULL COMMENT '帖子ID，关联到post表',
+    commentId  BIGINT                             NOT NULL COMMENT '评论ID，关联到post_comment表',
+    userId     BIGINT                             NOT NULL COMMENT '回复者ID，关联到user表',
+    content    TEXT                               NOT NULL COMMENT '回复内容',
+    country    VARCHAR(100)                       NULL COMMENT '国家',
+    city       VARCHAR(100)                       NULL COMMENT '城市',
+    createTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete   TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    INDEX idx_postId (postId),
+    INDEX idx_commentId (commentId),
+    INDEX idx_userId (userId),
+    CONSTRAINT fk_reply_post FOREIGN KEY (postId) REFERENCES post (id),
+    CONSTRAINT fk_reply_comment FOREIGN KEY (commentId) REFERENCES post_comment (id),
+    CONSTRAINT fk_reply_user FOREIGN KEY (userId) REFERENCES user (id)
+) COMMENT '帖子评论回复' COLLATE = utf8mb4_unicode_ci;
 
 -- 用户等级表
 create table if not exists user_level
@@ -836,6 +878,25 @@ create table if not exists user_feedback
     index idx_status (status)
 ) comment '用户反馈' collate = utf8mb4_unicode_ci;
 
+CREATE TABLE `user_feedback_reply`
+(
+    id          bigint        NOT NULL AUTO_INCREMENT COMMENT 'id',
+    feedbackId  bigint        NOT NULL COMMENT '关联的反馈ID',
+    senderId    bigint        NOT NULL COMMENT '发送者ID',
+    senderRole  tinyint       NOT NULL COMMENT '发送者角色：0-用户，1-管理员',
+    content     varchar(1000) NOT NULL COMMENT '回复内容',
+    attachment  varchar(1024)          DEFAULT NULL COMMENT '附件URL',
+    isRead      tinyint       NOT NULL DEFAULT '0' COMMENT '是否已读：0-未读，1-已读',
+    createTime  datetime      NOT NULL COMMENT '创建时间',
+    updateTime  datetime      NOT NULL COMMENT '更新时间',
+    isDelete    tinyint       NOT NULL DEFAULT '0' COMMENT '是否删除',
+    PRIMARY KEY (id),
+    KEY idx_feedback_id (feedbackId),
+    KEY idx_sender_id (senderId),
+    KEY idx_create_time (createTime)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='反馈回复';
+
+-- 用户生词本表
 CREATE TABLE IF NOT EXISTS user_word_book
 (
     id             BIGINT AUTO_INCREMENT COMMENT 'id' PRIMARY KEY,
@@ -855,3 +916,156 @@ CREATE TABLE IF NOT EXISTS user_word_book
     INDEX idx_difficulty (difficulty),
     UNIQUE uk_user_word (userId, wordId)
 ) COMMENT '用户生词本' COLLATE = utf8mb4_unicode_ci;
+
+-- 班级信息表
+CREATE TABLE IF NOT EXISTS class_info
+(
+    id          BIGINT AUTO_INCREMENT COMMENT '班级ID' PRIMARY KEY,
+    className   VARCHAR(256)                       NOT NULL COMMENT '班级名称',
+    description TEXT                               NULL COMMENT '班级描述',
+    creatorId   BIGINT                             NOT NULL COMMENT '创建者ID，关联到user表',
+    createTime  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete    TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    INDEX idx_creatorId (creatorId),
+    CONSTRAINT fk_class_info_creator FOREIGN KEY (creatorId) REFERENCES user(id)
+) COMMENT '班级信息' COLLATE = utf8mb4_unicode_ci;
+
+-- 班级成员表
+CREATE TABLE IF NOT EXISTS class_member
+(
+    id         BIGINT AUTO_INCREMENT COMMENT '成员ID' PRIMARY KEY,
+    classId    BIGINT                             NOT NULL COMMENT '班级ID，关联到class_info表',
+    userId     BIGINT                             NOT NULL COMMENT '用户ID，关联到user表',
+    role       VARCHAR(32)                        NOT NULL COMMENT '角色，如teacher/student',
+    joinTime   DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '加入时间',
+    isDelete   TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    INDEX idx_classId (classId),
+    INDEX idx_userId (userId),
+    UNIQUE uk_class_user (classId, userId),
+    CONSTRAINT fk_class_member_class FOREIGN KEY (classId) REFERENCES class_info(id),
+    CONSTRAINT fk_class_member_user FOREIGN KEY (userId) REFERENCES user(id)
+) COMMENT '班级成员' COLLATE = utf8mb4_unicode_ci;
+
+-- 班级与课程关联表
+CREATE TABLE IF NOT EXISTS class_course
+(
+    id         BIGINT AUTO_INCREMENT COMMENT '关联ID' PRIMARY KEY,
+    classId    BIGINT                             NOT NULL COMMENT '班级ID，关联到class_info表',
+    courseId   BIGINT                             NOT NULL COMMENT '课程ID，关联到course表',
+    createTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete   TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    INDEX idx_classId (classId),
+    INDEX idx_courseId (courseId),
+    UNIQUE uk_class_course (classId, courseId),
+    CONSTRAINT fk_class_course_class FOREIGN KEY (classId) REFERENCES class_info(id),
+    CONSTRAINT fk_class_course_course FOREIGN KEY (courseId) REFERENCES course(id)
+) COMMENT '班级与课程关联' COLLATE = utf8mb4_unicode_ci;
+
+-- 作业表
+CREATE TABLE IF NOT EXISTS class_assignment
+(
+    id          BIGINT AUTO_INCREMENT COMMENT '作业ID' PRIMARY KEY,
+    classId     BIGINT                             NOT NULL COMMENT '班级ID，关联到class_info表',
+    courseId    BIGINT                             NOT NULL COMMENT '课程ID，关联到course表',
+    title       VARCHAR(256)                       NOT NULL COMMENT '作业标题',
+    description TEXT                               NULL COMMENT '作业描述',
+    deadline    DATETIME                           NULL COMMENT '截止日期',
+    creatorId   BIGINT                             NOT NULL COMMENT '创建者ID，关联到user表',
+    createTime  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete    TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    INDEX idx_classId (classId),
+    INDEX idx_courseId (courseId),
+    INDEX idx_creatorId (creatorId),
+    CONSTRAINT fk_class_assignment_class FOREIGN KEY (classId) REFERENCES class_info(id),
+    CONSTRAINT fk_class_assignment_course FOREIGN KEY (courseId) REFERENCES course(id),
+    CONSTRAINT fk_class_assignment_creator FOREIGN KEY (creatorId) REFERENCES user(id)
+) COMMENT '班级作业' COLLATE = utf8mb4_unicode_ci;
+
+-- 作业提交表
+CREATE TABLE IF NOT EXISTS assignment_submission
+(
+    id            BIGINT AUTO_INCREMENT COMMENT '提交ID' PRIMARY KEY,
+    assignmentId  BIGINT                             NOT NULL COMMENT '作业ID，关联到class_assignment表',
+    userId        BIGINT                             NOT NULL COMMENT '提交者ID，关联到user表',
+    content       TEXT                               NULL COMMENT '提交内容',
+    attachmentUrl VARCHAR(1024)                      NULL COMMENT '附件URL',
+    submitTime    DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '提交时间',
+    score         DECIMAL(5,2)                       NULL COMMENT '评分',
+    feedback      TEXT                               NULL COMMENT '教师反馈',
+    isDelete      TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    INDEX idx_assignmentId (assignmentId),
+    INDEX idx_userId (userId),
+    UNIQUE uk_submission (assignmentId, userId),
+    CONSTRAINT fk_assignment_submission_assignment FOREIGN KEY (assignmentId) REFERENCES class_assignment(id),
+    CONSTRAINT fk_assignment_submission_user FOREIGN KEY (userId) REFERENCES user(id)
+) COMMENT '作业提交' COLLATE = utf8mb4_unicode_ci;
+
+-- 私聊消息表
+CREATE TABLE IF NOT EXISTS private_message
+(
+    id          BIGINT AUTO_INCREMENT COMMENT '消息ID' PRIMARY KEY,
+    senderId    BIGINT                             NOT NULL COMMENT '发送者ID，关联到user表',
+    receiverId  BIGINT                             NOT NULL COMMENT '接收者ID，关联到user表',
+    content     TEXT                               NOT NULL COMMENT '消息内容',
+    isRead      TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否已读：0-否，1-是',
+    createTime  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '发送时间',
+    isDelete    TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    INDEX idx_senderId (senderId),
+    INDEX idx_receiverId (receiverId),
+    INDEX idx_createTime (createTime),
+    CONSTRAINT fk_private_message_sender FOREIGN KEY (senderId) REFERENCES user(id),
+    CONSTRAINT fk_private_message_receiver FOREIGN KEY (receiverId) REFERENCES user(id)
+) COMMENT '私聊消息' COLLATE = utf8mb4_unicode_ci;
+
+-- 私聊会话表
+CREATE TABLE IF NOT EXISTS private_chat_session
+(
+    id              BIGINT AUTO_INCREMENT COMMENT '会话ID' PRIMARY KEY,
+    userId1         BIGINT                             NOT NULL COMMENT '用户1 ID，关联到user表',
+    userId2         BIGINT                             NOT NULL COMMENT '用户2 ID，关联到user表',
+    lastMessageTime DATETIME                           NULL COMMENT '最后一条消息时间',
+    createTime      DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime      DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete        TINYINT  DEFAULT 0                 NOT NULL COMMENT '是否删除：0-否，1-是',
+    INDEX idx_userId1 (userId1),
+    INDEX idx_userId2 (userId2),
+    UNIQUE uk_session (userId1, userId2),
+    CONSTRAINT fk_private_chat_session_user1 FOREIGN KEY (userId1) REFERENCES user(id),
+    CONSTRAINT fk_private_chat_session_user2 FOREIGN KEY (userId2) REFERENCES user(id)
+) COMMENT '私聊会话' COLLATE = utf8mb4_unicode_ci;
+
+-- 好友关系表
+CREATE TABLE IF NOT EXISTS friend_relationship
+(
+    id         BIGINT AUTO_INCREMENT COMMENT '主键' PRIMARY KEY,
+    userId1    BIGINT                             NOT NULL COMMENT '用户1 ID，关联到user表',
+    userId2    BIGINT                             NOT NULL COMMENT '用户2 ID，关联到user表',
+    status     VARCHAR(20)                        NOT NULL COMMENT '关系状态：pending/accepted/blocked',
+    createTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_userId1 (userId1),
+    INDEX idx_userId2 (userId2),
+    UNIQUE uk_friend (userId1, userId2),
+    CONSTRAINT fk_friend_user1 FOREIGN KEY (userId1) REFERENCES user(id),
+    CONSTRAINT fk_friend_user2 FOREIGN KEY (userId2) REFERENCES user(id)
+) COMMENT '好友关系表' COLLATE = utf8mb4_unicode_ci;
+
+-- 好友申请表
+CREATE TABLE IF NOT EXISTS friend_request
+(
+    id         BIGINT AUTO_INCREMENT COMMENT '主键' PRIMARY KEY,
+    senderId   BIGINT                             NOT NULL COMMENT '发送者 ID，关联到user表',
+    receiverId BIGINT                             NOT NULL COMMENT '接收者 ID，关联到user表',
+    status     VARCHAR(20)                        NOT NULL COMMENT '申请状态：pending/accepted/rejected',
+    message    VARCHAR(512)                       NULL COMMENT '申请消息',
+    createTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_senderId (senderId),
+    INDEX idx_receiverId (receiverId),
+    UNIQUE uk_request (senderId, receiverId),
+    CONSTRAINT fk_request_sender FOREIGN KEY (senderId) REFERENCES user(id),
+    CONSTRAINT fk_request_receiver FOREIGN KEY (receiverId) REFERENCES user(id)
+) COMMENT '好友申请表' COLLATE = utf8mb4_unicode_ci;

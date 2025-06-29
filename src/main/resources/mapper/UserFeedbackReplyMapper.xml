@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ubanillx.smartclass.mapper.UserFeedbackReplyMapper">
+
+    <resultMap id="BaseResultMap" type="com.ubanillx.smartclass.model.entity.UserFeedbackReply">
+            <id property="id" column="id" />
+            <result property="feedbackId" column="feedbackId" />
+            <result property="senderId" column="senderId" />
+            <result property="senderRole" column="senderRole" />
+            <result property="content" column="content" />
+            <result property="attachment" column="attachment" />
+            <result property="isRead" column="isRead" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,feedbackId,senderId,senderRole,content,attachment,
+        isRead,createTime,updateTime,isDelete
+    </sql>
+</mapper>

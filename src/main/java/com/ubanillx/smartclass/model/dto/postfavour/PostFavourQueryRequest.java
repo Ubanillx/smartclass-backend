@@ -1,25 +1,25 @@
 package com.ubanillx.smartclass.model.dto.postfavour;
 
 import com.ubanillx.smartclass.common.PageRequest;
-import com.ubanillx.smartclass.model.dto.post.PostQueryRequest;
-import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.io.Serializable;
+
 /**
  * 帖子收藏查询请求
-*/
-@Data
+ */
 @EqualsAndHashCode(callSuper = true)
+@Data
 public class PostFavourQueryRequest extends PageRequest implements Serializable {
-
+    
     /**
-     * 帖子查询请求
+     * 帖子id
      */
-    private PostQueryRequest postQueryRequest;
-
+    private Long postId;
+    
     /**
-     * 用户 id
+     * 用户id
      */
     private Long userId;
 
