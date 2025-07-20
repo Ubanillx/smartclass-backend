@@ -22,6 +22,8 @@
 
 * **前端仓库**: [smartclass-frontend](https://github.com/Ubanillx/smartclass-frontend) - 基于Vue3的移动端应用
 * **管理端仓库** [smartclass-man-frontend](https://github.com/Ubanillx/smartclass-manage-frontend) - 基于Ant Design的管理中台
+* **微服务版** [smartclass-backend-microservice](https://github.com/Ubanillx/smartclass-backend-microservice) - 基于SpringCloud的微服务架构的后端
+
 
 ## 功能特点
 
