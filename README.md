@@ -404,3 +404,7 @@ http://localhost:8101/api/doc.html
 - `user_status`: 用户在线状态更新事件
 - `system`: 系统通知事件
 
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Ubanillx/smartclass-backend&type=date&legend=top-left)](https://www.star-history.com/#Ubanillx/smartclass-backend&type=date&legend=top-left)
