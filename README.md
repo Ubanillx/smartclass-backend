@@ -1,6 +1,6 @@
 # 智云星课 - 智能学习平台后端
 
-## 本项目本人不再更新支持，新版移至**前端仓库**: [NovaCloudEdu](https://github.com/Ubanillx/NovaCloudEdu)
+## 本项目本人不再更新支持，新版移至**仓库**: [NovaCloudEdu](https://github.com/Ubanillx/NovaCloudEdu)
 
 ## 项目简介
 
